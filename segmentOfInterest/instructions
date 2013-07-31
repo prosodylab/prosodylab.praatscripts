@@ -1,0 +1,12 @@
+I think both scripts are fully working. To run them, they go in whatever directory the TextGrids are in, just like the original files.
+
+The work flow is:
+1a) Create the TextGrids with the aligner
+1b) Run woi_IPA_column.praat to append the dictionary transcription to the experiment file
+Ideally these two steps are done together to make sure the same dictionary is used.
+
+2) Manually add underscores and labels (I think only 1 character labels will work, but I can change that if necessary) to segments of interest in Excel. It should be pretty quick using search and replace.
+
+3) Run annotate_soi.praat to add a tier for segments of interest. It's not the fastest script in the world, but it works! The user has to make sure soi_file is equal to the same new_file the woi_IPA_column script spits out.
+
+EDIT: I've marked the woi_IPA_column.praat script and its output as yellow. I've marked the annotate_soi.praat script and its outputs in green. Originals are marked in blue.
