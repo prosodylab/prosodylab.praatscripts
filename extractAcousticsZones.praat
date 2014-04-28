@@ -42,9 +42,9 @@ endproc
 
 form Calculate Results for Production Experiments
 	sentence Name_Format experiment_participant_item_condition
-	sentence Result_filename socrlo
+	sentence Result_filename willf2
 	sentence extension .wav
-	sentence Sound_directory ../2_data/2_soundfiles/
+	sentence Sound_directory ../3_truncate/truncated/
 	natural woiTier 3
 	natural wordTier 2
         natural phonTier 1
@@ -128,7 +128,8 @@ for i to n
       Read from file... 'grid$'
    
         numberTiers = Get number of tiers
-  
+       if numberTiers > 2
+
         filesconsidered = filesconsidered + 1
 
  	call cutname 'dummy$'
@@ -363,6 +364,7 @@ for i to n
                 Remove
 
         endif 
+endif
    endfor   
 
    printline Soundfiles selected: 'n'
