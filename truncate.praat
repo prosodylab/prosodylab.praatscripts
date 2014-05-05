@@ -21,7 +21,7 @@ form Truncate Silence from Soundfiles
         boolean make_guess yes
 	sentence Extension .wav
 	boolean Soundfile_in_same_directory_as_script no
-	sentence Directory_sound ../3_data/
+	sentence Directory_sound ../2_data/1_soundfiles/
 	boolean makeDirectory
 endform
 
@@ -152,7 +152,7 @@ endif
 	
 				beginPause("Truncate?")
 					boolean ("Problematic",0)
-                                        boolean ("Truncate",0)
+                                        boolean ("Truncate",1)
 				clicked = endPause("Continue",1)
 
 			    if truncate = 0
