@@ -172,10 +172,10 @@ endproc
 
 
 form Annotate Words of Interest	
-	sentence Woi_file ../../1_experiment/efr_3.txt
+	sentence Woi_file ../../1_experiment/amppl.txt
 	sentence Id_columns experiment_item_condition
 	sentence Filename_format experiment_participant_item_condition
-	natural wordTierNumber 1
+	natural wordTierNumber 2
 	boolean Dry_run 1
 	boolean restore_old_before 0
 endform

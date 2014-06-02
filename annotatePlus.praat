@@ -20,7 +20,7 @@ form Truncate Silence from Soundfiles
         sentence annotator
 	natural silenceThreshhold 50
         boolean make_guess yes
-	sentence Woi_file scoinSyr_responses.txt
+	sentence Woi_file amppl_responses.txt
 	sentence Extension .wav
 	boolean Soundfile_in_same_directory_as_script no
 	sentence sound_Directory ../2_data/1_soundfiles/
@@ -150,6 +150,10 @@ endif
 
 
 # Truncate!
+
+		select soundgrid 
+		Rename... soundname
+
 		select soundfile
 		editorname$ = "Sound"
 
@@ -159,25 +163,24 @@ endif
 		endif
 
 		Edit
-		 editor 'editorname$' 'short$'
+		 editor 'editorname$' soundname
 			 	Select... onsettime offsettime					
 	
 				beginPause("Annotation/Truncation")
 					boolean ("Problematic",0)
-                                        boolean ("Truncate",0)
-					boolean ("SaveWavAndLabFile",0)
+                                        boolean ("Truncate",1)
+					boolean ("SaveWavAndLabFile",1)
 				 anno = choice ("categories",6)
-					option ("declarativefall")
-					option ("risefallrise")
-                    			option ("yesnorise")
-                   			option ("contradictioncontour")
+					option ("flat, no boundary")
+					option ("flat, two boundaries")
+                    			option ("early boundary")
+                   			option ("late boundary")
 					option ("other")
 					option ("problematic")
-				anno2=choice("prominence",4)
-					option ("all/none")
-					option ("didn't/did")
-					option ("neutral prominence")
-					option ("unclear")
+				anno2=choice("prominence",1)
+					option ("fluent")
+					option ("somewhat disfluent")
+					option ("not fluent")
 				clicked = endPause("Continue",1)
 
 			   if truncate = 0
