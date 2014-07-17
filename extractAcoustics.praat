@@ -11,7 +11,7 @@ form Calculate Results for Production Experiments
 	sentence Output_Filename rfr
 	sentence extension .wav
 	# Specify directory -- otherwise selected soundfiles will be annotated
-	sentence Sound_directory ../2_truncate/truncated
+	sentence Sound_directory ../4_annotate/truncated
 	natural Required_Tiers 3
         natural phonTier 1
 	natural wordTier 2
@@ -297,14 +297,15 @@ for i to n
 
 endfor   
 
+	
+writeInfoLine("Done!")
+appendInfoLine("")
+appendInfoLine("Output was written to tab-delimited file 'output_Filename$'.txt.")
+appendInfoLine("")
+appendInfoLine("'filesconsidered' files had measures extracted.")
 
 if missinggrids<>0
-	missinggrid$ > GridMissingOrIncomplete.txt	
-	writeInfoLine("Done!")
-	appendInfoLine("")
-	appendInfoLine("Output was written to tab-delimited file 'output_Filename$'.txt.")
-	appendInfoLine("")
-	appendInfoLine("'filesconsidered' files had measures extracted.")
+	missinggrid$ > GridMissingOrIncomplete.txt
 	appendInfoLine("")
 	appendInfoLine("There were 'missinggrids' files with TextGrids that were either missing or didn't have enough Tiers.")
 	appendInfoLine("")
