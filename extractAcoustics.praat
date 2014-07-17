@@ -8,10 +8,10 @@ echo Extract Acoustic Measures for Words and Zones
 
 form Calculate Results for Production Experiments
 	sentence Name_Format experiment_participant_item_condition
-	sentence Output_Filename test
+	sentence Output_Filename rfr
 	sentence extension .wav
 	# Specify directory -- otherwise selected soundfiles will be annotated
-	sentence Sound_directory data/
+	sentence Sound_directory ../2_truncate/truncated
 	natural Required_Tiers 3
         natural phonTier 1
 	natural wordTier 2
@@ -78,7 +78,8 @@ columnNames$ > 'output_Filename$'.txt
 # This keeps track of how many files were considered for measurements:
 filesconsidered = 0
 
-Create Strings as file list... list 'sound_directory$'*'extension$'
+Create Strings as file list... list 'sound_directory$'/*'extension$'
+myStrings=selected()
 n = Get number of strings
 
 # Now we'll cycle through all files and do the measurments
@@ -93,19 +94,19 @@ for i to n
    length = length - length2
    shortname$ = left$(filename$, length)
    call cutname 'shortname$'
-   grid$ = sound_directory$ + shortname$+".TextGrid"
+   grid$ = sound_directory$ + "/" + shortname$+".TextGrid"
     if fileReadable (grid$)=0
         missinggrids+=1
-	missinggrid$="'missinggrids'" + tab$ + missinggrid$ + shortname$+".wav" + tab$ + "No TextGrid" + newline$
+	missinggrid$= missinggrid$ + "'missinggrids'" + tab$ + shortname$+".wav" + tab$ + "No TextGrid" + newline$
     else
-	Read from file... 'sound_directory$''filename$'
+	Read from file... 'sound_directory$'/'filename$'
    	mySound=selected()
         Read from file... 'grid$'
         myGrid=selected()
         numberTiers = Get number of tiers
         if numberTiers < required_Tiers
         	missinggrids+=1
-		missinggrid$="'missinggrids'" + tab$ + missinggrid$ + shortname$+".wav" + tab$ + "No enough tiers" + newline$
+		missinggrid$= missinggrid$ + "'missinggrids'" + tab$ + shortname$+".wav" + tab$ + "No enough tiers" + newline$
 	else
 	        filesconsidered = filesconsidered + 1
    
@@ -312,5 +313,6 @@ if missinggrids<>0
 	appendInfoLine (missinggrid$)
 endif
 
-
+select myStrings
+Remove
 
