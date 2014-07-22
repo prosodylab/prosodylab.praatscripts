@@ -11,7 +11,7 @@ form Calculate Results for Production Experiments
 	sentence Output_Filename rfr
 	sentence extension .wav
 	# Specify directory -- otherwise selected soundfiles will be annotated
-	sentence Sound_directory ../4_annotate/truncated
+	sentence Sound_directory ../2_truncate/truncated
 	natural Required_Tiers 3
         natural phonTier 1
 	natural wordTier 2
@@ -46,7 +46,6 @@ procedure cutname thename$
 	# now a tab delimited string with the column names is in variable return$
 endproc
 
-
 #
 # Main script
 #
@@ -68,7 +67,7 @@ columnNamesInt$ =  replace$(columnNamesPit$,"pitch","intensity",0)
 
 columnNames$=return$ + ", fileName, word, wordLabel, woiLabel, wordOnset, wordOffset, duration, silence, duraSil, phoneLength, "
 columnNames$= columnNames$ + "meanPitch, maxPitch, maxPitTime, minPitch, minPitTime, " + columnNamesPit$ + "meanIntensity, maxIntensity, maxIntTime, "  + columnNamesInt$
-columnNames$ = columnNames$ + "zstart, zend,  zlabel, zDuration, zPhonelength, zmeanPitch, zmaxPitch, zmaxPitTime, zminPitch, zminPitTime, zmeanIntensity, zmaxIntensity, zmaxIntTime"
+columnNames$ = columnNames$ + "zstart, zend,  zDuration, zPhonelength, zmeanPitch, zmaxPitch, zmaxPitTime, zminPitch, zminPitTime, zmeanIntensity, zmaxIntensity, zmaxIntTime, zLabel"
 columnNames$=replace$(columnNames$,", ",tab$,0)
 columnNames$ = columnNames$ + newline$
 
@@ -113,12 +112,13 @@ for i to n
 		select mySound
 
 		# Two step pitch extraction following praat group post by Daniel Hirst
-		noprogress To Pitch... 0.01 60 700
+		# but using 75,500 as lower and upper limit
+		noprogress To Pitch... 0.01 75 500
 		q1 = Get quantile... 0 0 0.25 Hertz
 		q3 = Get quantile... 0 0 0.75 Hertz
 		Remove
-		floor = q1*0.75
-		ceiling = q3*2
+		floor = max(75,q1*0.75)
+		ceiling = min(500,q3*1.5)
 
 		select mySound
 		myPitch = noprogress To Pitch... 0.01 floor ceiling
@@ -148,6 +148,8 @@ for i to n
 
 			    if label$ <>  "sil" and label$ <> "sp"			
 				# only add measures for none-silence intervals (silence intervals following words will be measured when the preceding word is measured)
+
+				wcounter+=1
 
 				if zlabel$ = ""
 					zlabel$=label$
@@ -190,7 +192,7 @@ for i to n
 				endif
 
 				# Add word measures to output
-				output$=return$ + tab$ +  shortname$  + tab$ + "'wcounter'"  + tab$ + "'label$'" + tab$ + "'woilabel$'" + tab$ + "''wordonset:3'" + tab$ +  "'wordoffset:3'" + tab$ + "'wduration:3'" + tab$ + "'wsilence:3'" + tab$ + "'wdurasil:3'" +  tab$ + "'wphonelength:3'" 
+				output$=return$ + tab$ +  shortname$  + tab$ + "'wcounter'"  + tab$ + "'label$'" + tab$ + "'woilabel$'" + tab$ + "'wordonset:4'" + tab$ +  "'wordoffset:4'" + tab$ + "'wduration:4'" + tab$ + "'wsilence:3'" + tab$ + "'wdurasil:3'" +  tab$ + "'wphonelength:3'" 
 
 				nwoi = extractNumber(woilabel$,"")
 
@@ -243,7 +245,7 @@ for i to n
 					zduration=zstart-zend
 
 					# add measures to output
-					output$ = output$ + tab$ + "'zstart:3'" + tab$ + "'zend:3'"  + tab$ + "'zlabel$'" + tab$ + "'zduration:3'" + tab$ + "'zphonelength'"
+					output$ = output$ + tab$ + "'zstart:3'" + tab$ + "'zend:3'"  + tab$ + "'zduration:3'" + tab$ + "'zphonelength'"
 
 					# pitch measures for zone
 					select myPitch
@@ -264,7 +266,7 @@ for i to n
 					zmaxIntTime = Get time of maximum... 'zstart' 'zend' Parabolic
 					zmaxIntTime = maxIntTime - zstart
 					#
-					output$ = output$ + tab$ + "'zmeanIntensity:3'" + tab$ + "'zmeanIntensity:3'" + tab$ + "'zmaxIntTime:3'" 
+					output$ = output$ + tab$ + "'zmeanIntensity:3'" + tab$ + "'zmeanIntensity:3'" + tab$ + "'zmaxIntTime:3'"  + tab$ + "'zlabel$'"
 	
 				else
 					# set empty cells for zone measures if zone doesn't end here
@@ -292,21 +294,22 @@ for i to n
   plus mySound
   Remove
   endif
-
-  writeInfoLine ("Processed sound 'i' of 'n'. So far, 'filesconsidered' files had measures extracted.")
+  
+  if i=10*round((i/10))	
+ 	writeInfoLine ("Processed sound 'i' of 'n'. So far, 'filesconsidered' files had measures extracted.")
+  endif
 
 endfor   
 
-	
 writeInfoLine("Done!")
 appendInfoLine("")
 appendInfoLine("Output was written to tab-delimited file 'output_Filename$'.txt.")
 appendInfoLine("")
-appendInfoLine("'filesconsidered' files had measures extracted.")
+appendInfoLine("'filesconsidered' files out of 'n' had measures extracted.")
+appendInfoLine("")
 
 if missinggrids<>0
-	missinggrid$ > GridMissingOrIncomplete.txt
-	appendInfoLine("")
+	missinggrid$ > GridMissingOrIncomplete.txt	
 	appendInfoLine("There were 'missinggrids' files with TextGrids that were either missing or didn't have enough Tiers.")
 	appendInfoLine("")
 	appendInfoLine("See full list in tab-delimited file GridMissingOrIncomplete.txt, and below:")
