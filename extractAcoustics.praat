@@ -8,10 +8,10 @@ echo Extract Acoustic Measures for Words and Zones
 
 form Calculate Results for Production Experiments
 	sentence Name_Format experiment_participant_item_condition
-	sentence Output_Filename rfr
+	sentence Output_Filename cont
 	sentence extension .wav
 	# Specify directory -- otherwise selected soundfiles will be annotated
-	sentence Sound_directory ../2_truncate/truncated
+	sentence Sound_directory ../4_annotate/truncated
 	natural Required_Tiers 3
         natural phonTier 1
 	natural wordTier 2
@@ -114,11 +114,22 @@ for i to n
 		# Two step pitch extraction following praat group post by Daniel Hirst
 		# but using 75,500 as lower and upper limit
 		noprogress To Pitch... 0.01 75 500
-		q1 = Get quantile... 0 0 0.25 Hertz
-		q3 = Get quantile... 0 0 0.75 Hertz
+		floor = Get quantile... 0 0 0.25 Hertz
+		ceiling = Get quantile... 0 0 0.75 Hertz
 		Remove
-		floor = max(75,q1*0.75)
-		ceiling = min(500,q3*1.5)
+		if floor = undefined
+			floor = 75
+		else
+			floor = max(75,floor*0.75)
+			floor=min(150,floor)
+		endif
+
+		if ceiling = undefined
+			ceiling = 600
+		else
+			ceiling = min(600,ceiling*1.5)
+		endif
+
 
 		select mySound
 		myPitch = noprogress To Pitch... 0.01 floor ceiling
