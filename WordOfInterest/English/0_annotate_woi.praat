@@ -1,6 +1,15 @@
 # Annotate words of interest
 echo Annotate Words of Interest
 
+form Annotate Words of Interest	
+	sentence Woi_file ../../1_experiment/nogrit4_woi.txt
+	sentence Id_columns experiment_item_condition
+	sentence Filename_format experiment_participant_item_condition
+	natural wordTierNumber 2
+	boolean Dry_run 1
+	boolean restore_old_before 0
+endform
+
 
 # This procedure saves the id-column-names in an array (column_name'number'))
 # and identifies how many identifying columns there are (numberColumns)
@@ -171,14 +180,7 @@ endproc
 
 
 
-form Annotate Words of Interest	
-	sentence Woi_file ../../1_experiment/amppl.txt
-	sentence Id_columns experiment_item_condition
-	sentence Filename_format experiment_participant_item_condition
-	natural wordTierNumber 2
-	boolean Dry_run 1
-	boolean restore_old_before 0
-endform
+
 
 storeold$="0_oldTextGrids"
 
