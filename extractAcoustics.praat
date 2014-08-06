@@ -278,7 +278,10 @@ for i to n
 					zmaxIntTime = maxIntTime - zstart
 					#
 					output$ = output$ + tab$ + "'zmeanIntensity:3'" + tab$ + "'zmeanIntensity:3'" + tab$ + "'zmaxIntTime:3'"  + tab$ + "'zlabel$'"
-	
+					
+					zstart=0
+					zlabel$=""
+					zend=0
 				else
 					# set empty cells for zone measures if zone doesn't end here
 					for j to 12
