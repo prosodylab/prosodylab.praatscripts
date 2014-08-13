@@ -8,10 +8,10 @@ echo Extract Acoustic Measures for Words and Zones
 
 form Calculate Results for Production Experiments
 	sentence Name_Format experiment_participant_item_condition
-	sentence Output_Filename cont
+	sentence Output_Filename lev
 	sentence extension .wav
 	# Specify directory -- otherwise selected soundfiles will be annotated
-	sentence Sound_directory ../4_annotate/truncated
+	sentence Sound_directory ../3_truncate_lev/truncated
 	natural Required_Tiers 3
         natural phonTier 1
 	natural wordTier 2
@@ -253,7 +253,7 @@ for i to n
     				if woilabel$ <> ""
 					# zone measures here
 					zend=wordoffset
-					zduration=zstart-zend
+					zduration=zend-zstart
 
 					# add measures to output
 					output$ = output$ + tab$ + "'zstart:3'" + tab$ + "'zend:3'"  + tab$ + "'zduration:3'" + tab$ + "'zphonelength'"
