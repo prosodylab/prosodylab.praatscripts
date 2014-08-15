@@ -1,7 +1,17 @@
 # Calculate various acoustic variables
 # Michael Wagner. chael@mcgill.ca. July 2009
 
-echo Measure
+echo SOI Measures
+
+form Calculate Results for Production Experiments
+	sentence Name_Format experiment_participant_item_condition
+	sentence Result_filename allo
+	sentence extension .wav
+	sentence Sound_directory ../4_allo_truncate/truncated/
+	natural wordTier 2
+	natural woiTier 3
+	sentence seperator ,
+endform
 
 # This script measures various acoustic variables in our annotated files
 # You have to *select* all sound files that you want to be included before
@@ -49,15 +59,7 @@ until remain$ = ""
 endproc
 
 
-form Calculate Results for Production Experiments
-	sentence Name_Format experiment_participant_item_condition
-	sentence Result_filename ersapro10
-	sentence extension .wav
-	sentence Sound_directory ../2_data/1_soundfiles/
-	natural wordTier 2
-	natural woiTier 3
-	sentence seperator ,
-endform
+
 
 
 output$ = "" 
@@ -66,7 +68,8 @@ output$ > 'result_filename$'.txt
 # This creates the column labels:
 
 call cutname 'name_Format$'
-output$ = return$ + "word" +  "'seperator$'"  + "wordlabel" + "'seperator$'" + "vlabel" +  "'seperator$'"
+output$ = return$ + "word" +  "'seperator$'"  + "wordlabel" + "'seperator$'" + "segment" +  "'seperator$'"
+		   ... + "precedingSegment" +  "'seperator$'" + "followingSegment" +  "'seperator$'"
 		    ...+ "phonelength"
                      ...+  "'seperator$'" + "duration" +  "'seperator$'" + "silence" +  "'seperator$'" + "durasil"
                      ...+  "'seperator$'" + "meanpit" +  "'seperator$'" + "maxpitch" +  "'seperator$'" + "maxPitTime"
@@ -113,17 +116,20 @@ for i to n
 
      filesconsidered = filesconsidered + 1
 
+     printline 'i' out of 'n'
+
 # Create all objects necessary for measurements 
 
      select Sound 'dummy$'
-     To Pitch (ac)... 0 75 15 no 0.02 0.45 0.01 0.35 0.14 350.0
+     noprogress To Pitch (ac)... 0 75 15 no 0.02 0.45 0.01 0.35 0.14 350.0
      select Sound 'dummy$'
-     To Intensity... 100 0.0 yes
+     noprogress      To Intensity... 100 0.0 yes
      select Sound 'dummy$'
-     To Formant (burg)... 0 5 5500 0.025 50
+     noprogress      To Formant (burg)... 0 5 5500 0.025 50
     
      select TextGrid 'dummy$'
      numbInt = Get number of intervals... woiTier
+     nSegIntervals = Get number of intervals... 1
      numbIntWord = Get number of intervals... wordTier
     
 # counter counts the silent intervals separating words
@@ -179,13 +185,32 @@ for i to n
 		wordint = Get interval at time... wordTier midd
 		wordlabel$ = Get label of interval... wordTier wordint
 
-		# Get vowel label from segment tier
-		if label$ = "1"
-			segint = Get interval at time... 1 wordonset-0.000001
-		elsif label$ = "2"
-			segint = Get interval at time... 1 midd
-		endif
-		vlabel$ = Get label of interval... 1 segint
+		# Get label of segment
+		segInterval = Get interval at time... 1 midd
+		segment$ = Get label of interval... 1 segInterval
+
+		# Get label of preceding segment
+		precedingSegment$ = ""
+		precInterval = segInterval
+
+		repeat
+			precInterval = segInterval - 1
+			if precInterval <> 0
+				precedingSegment$ = Get label of interval... 1 precInterval
+			endif
+		until precedingSegment$ <> "sil" & precedingSegment$ <> "sp"
+
+		# Get label of following segment
+		followingSegment$ = ""
+		precInterval = segInterval
+
+		repeat
+			precInterval = segInterval + 1
+			if precInterval <= nSegIntervals
+				followingSegment$ = Get label of interval... 1 precInterval
+			endif
+		until followingSegment$ <> "sil" & followingSegment$ <> "sp"
+
 
 		# Is next interval a silence?
 		intervalSil = wordint + 1
@@ -264,7 +289,8 @@ for i to n
 			
 		return2$ = replace$(return$,  "'seperator$'","_",0)
 
-	 	output$ = return$  + "'label$'" + "'seperator$'" + "'wordlabel$'" + "'seperator$'" + "'vlabel$'" +  "'seperator$'"          
+	 	output$ = return$  + "'label$'" + "'seperator$'" + "'wordlabel$'" + "'seperator$'" + "'segment$'" +  "'seperator$'"     
+						... + "'precedingSegment$'" +  "'seperator$'"  + "'followingSegment$'" +  "'seperator$'"      
 		     				... + "'phonelength'" + "'seperator$'" + 
 						... "'duration:3'" +  "'seperator$'" + 
 		     				... "'silence:3'" +  "'seperator$'" + 
