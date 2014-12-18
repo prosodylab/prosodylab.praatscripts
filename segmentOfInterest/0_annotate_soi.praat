@@ -277,7 +277,7 @@ endproc
 
 ########################################################################################################################
 form Annotate Words of Interest	
-	sentence Soi_file /Users/sabrex39/Documents/Work/ersa/Data/
+	sentence Soi_file 0_ersapro14_15_soi.txt
 	sentence Id_columns experiment_item_condition
 	sentence Filename_format experiment_participant_item_condition
 	natural segTierNumber 1

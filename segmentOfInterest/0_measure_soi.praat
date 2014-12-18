@@ -5,9 +5,9 @@ echo SOI Measures
 
 form Calculate Results for Production Experiments
 	sentence Name_Format experiment_participant_item_condition
-	sentence Result_filename allo
+	sentence Result_filename ersapro14-15
 	sentence extension .wav
-	sentence Sound_directory ../4_allo_truncate/truncated/
+	sentence Sound_directory ../3_truncate/truncated/
 	natural wordTier 2
 	natural woiTier 3
 	sentence seperator ,
@@ -123,9 +123,9 @@ for i to n
      select Sound 'dummy$'
      noprogress To Pitch (ac)... 0 75 15 no 0.02 0.45 0.01 0.35 0.14 350.0
      select Sound 'dummy$'
-     noprogress      To Intensity... 100 0.0 yes
+     noprogress To Intensity... 100 0.0 yes
      select Sound 'dummy$'
-     noprogress      To Formant (burg)... 0 5 5500 0.025 50
+     noprogress To Formant (burg)... 0 5 5500 0.025 50
     
      select TextGrid 'dummy$'
      numbInt = Get number of intervals... woiTier

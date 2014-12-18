@@ -10,9 +10,9 @@
 echo Add IPA column to Word of Interest File
 
 form Add IPA column to Word of Interest File
-	sentence Woi_file /Users/speechlab/work/8_erictest/1_experiment/rogerDan.txt
-	sentence New_file /Users/speechlab/work/8_erictest1_experiment/rogerDan_segs.txt
-	sentence Dictionary_file /Applications/aligner/dictionary.txt 
+	sentence Woi_file /Users/prosodylab/Dropbox/work_experiments/1_projects_12_ersa/39_ersapro14_15/1_experiment/ersapro14_15.txt
+	sentence New_file /Users/prosodylab/Dropbox/work_experiments/1_projects_12_ersa/39_ersapro14_15/1_experiment/0_ersapro14_15_soi.txt
+	sentence Dictionary_file  /Users/prosodylab/Dropbox/work_experiments/0_aligner/0_aligner_english/0_git/dictionary.txt
 endform
 
 temp_file$ = "./woitemp.txt"
@@ -24,7 +24,7 @@ Append column... soi
 num_rows = Get number of rows
 
 for r to num_rows
-	woiline$ = Get value... r woi
+	woiline$ = Get value... r text
 	woiline$ =replace_regex$(woiline$, ".", "\U&", 0)
 	woiline$ = replace$ (woiline$, ".", "", 0)
 	woiline$ = replace$ (woiline$, ":", "", 0)
