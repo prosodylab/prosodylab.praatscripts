@@ -20,7 +20,7 @@ form Truncate Silence from Soundfiles
         sentence annotator
 	natural silenceThreshhold 50
         boolean make_guess yes
-	sentence Woi_file amppl_responses.txt
+	sentence Woi_file AQFOEprod2_responses.txt
 	sentence Extension .wav
 	boolean Soundfile_in_same_directory_as_script no
 	sentence sound_Directory ../2_data/1_soundfiles/
@@ -34,8 +34,8 @@ woi_file = selected("Table")
 
 if addcolumn 
 	select woi_file
-	Append column... 'annotator$'_tune
-	Append column... 'annotator$'_prominence
+	Append column... 'annotator$'_firstNP
+	Append column... 'annotator$'_secondNP
 	#Append column... 'annotator$'2
 endif
 
@@ -56,7 +56,7 @@ for i from 1 to trials
 
     select woi_file
 
-    annot$ = Get value... 'i' 'annotator$'_tune
+    annot$ = Get value... 'i' 'annotator$'_firstNP
 
    condition = Get value... 'i' condition
 
@@ -165,22 +165,20 @@ endif
 		Edit
 		 editor 'editorname$' soundname
 			 	Select... onsettime offsettime					
-	
 				beginPause("Annotation/Truncation")
 					boolean ("Problematic",0)
-                                        boolean ("Truncate",0)
-					boolean ("SaveWavAndLabFile",0)
-				 anno = choice ("categories",6)
-					option ("flat, no boundary")
-					option ("flat, two boundaries")
-                    			option ("early boundary")
-                   			option ("late boundary")
-					option ("other")
-					option ("problematic")
-				anno2=choice("prominence",1)
-					option ("fluent")
-					option ("somewhat disfluent")
-					option ("not fluent")
+                                        boolean ("Truncate",1)
+					boolean ("SaveWavAndLabFile",1)
+				 anno = choice ("firstNP",1)
+					option ("No Shift")
+					option ("Prominence Shift")
+                    			option ("Unclear")
+                   			option ("Problematic")
+				anno2=choice("secondNP",1)
+					option ("No Shift")
+					option ("Prominence Shift")
+                    			option ("Unclear")
+                   			option ("Problematic")
 				clicked = endPause("Continue",1)
 
 			   if truncate = 0
@@ -199,19 +197,14 @@ endif
 		endeditor
 
 		select woi_file
-		Set string value... 'i' 'annotator$'_tune 'categories'
-		Set string value... 'i' 'annotator$'_prominence 'prominence'
-		#Set string value... 'i' 'annotator$'_prominence 'prominence'
+		Set string value... 'i' 'annotator$'_firstNP 'firstNP'
+		Set string value... 'i' 'annotator$'_secondNP 'secondNP'
 		Write to table file... 'woi_file$'
 
 	if  saveWavAndLabFile
 		if problematic=0
-			select Sound untitled
+			select nsound
 			Write to WAV file... truncated/'filename$'
-			Remove
-
-			select soundfile 
-		        Remove
 			
 			if txtgrd = 1
 				select newsoundgrid 
@@ -229,9 +222,8 @@ endif
 			printline  'filename$'
 
 		else 
-			select Sound untitled
+			select nsound
 			Write to WAV file... problematic/'filename$'
-			Remove
 
 			if txtgrd = 1
 				select soundgrid
@@ -252,8 +244,7 @@ endif
 		Remove
        endif
 
-
-			select soundfile 
+			select soundfile
 		        Remove
 			select nsound
 			Remove

@@ -120,7 +120,7 @@ procedure getWoiLine
 			woiline$ = Get value... 'rw' woi
 		endif
 
-		woiline$ =replace_regex$(woiline$, ".", "\L&", 0)
+		woiline$ =replace_regex$(woiline$, ".", "\U&", 0)
 		woiline$ = replace$ (woiline$, ".", "", 0)
 		woiline$ = replace$ (woiline$, ":", "", 0)
 		woiline$ = replace$ (woiline$, ",", "", 0)
@@ -185,9 +185,9 @@ endproc
 
 
 form Annotate Words of Interest	
-	sentence Woi_file ../vocafra.txt
+	sentence Woi_file 0_confre_french_newWOI_utf8.txt
 	sentence Id_columns experiment_item_condition
-	sentence Filename_format experiment_participant_item_condition
+	sentence Filename_format experiment_lan_participant_item_condition
 	natural wordTierNumber 2
 	boolean Dry_run 1
 	boolean restore_old_before 0

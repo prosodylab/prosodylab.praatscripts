@@ -8,7 +8,7 @@
 ## 		e.g. {W O R D1/W O R D1a} {W O R D2} {W O R D3/W O R D3b}
 ##
 ##
-## Eric Doty and Michael Wagner
+## Eric Doty , Michael Wagner, Meghan Clayards
 ## McGill University
 ## October 2011
 #########################################################################################################################
