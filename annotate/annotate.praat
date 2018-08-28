@@ -17,13 +17,13 @@ echo Truncate Silence from Soundfiles
 printline
 
 form Truncate Silence from Soundfiles
-        sentence annotator
+    sentence annotator
 	natural silenceThreshhold 50
-        boolean make_guess yes
+    boolean make_guess yes
 	sentence Woi_file AQFOEprod2_responses.txt
 	sentence Extension .wav
-	boolean Soundfile_in_same_directory_as_script no
-	sentence sound_Directory ../2_data/1_soundfiles/
+	boolean Soundfile_in_same_directory_as_script yes
+	sentence sound_Directory
 	boolean makeDirectory
 	boolean addcolumn 0
 endform
