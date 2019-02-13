@@ -4,4 +4,3 @@ These Praat scripts were created in association with the Prosodylab Aligner (htt
 
 Use carefully, they may still be buggy!
 
-Usage guide to be added in Nov/Dec 2014.
