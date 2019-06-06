@@ -24,8 +24,8 @@ form Truncate Silence from Soundfiles
     boolean make_guess yes
 	sentence Woi_file AQFOEprod2_responses.txt
 	sentence Extension .wav
-	boolean Soundfile_in_same_directory_as_script no
-	sentence sound_Directory ../2_data/1_soundfiles/
+	boolean Soundfile_in_same_directory_as_script yes
+	sentence sound_Directory
 	boolean makeDirectory
 	boolean addcolumn 0
 endform

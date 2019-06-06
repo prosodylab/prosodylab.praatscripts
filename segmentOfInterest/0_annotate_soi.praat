@@ -131,6 +131,7 @@ procedure getSoiLine
 		endif
 
 		soiline$ =replace_regex$(soiline$, ".", "\U&", 0)
+	    soiline$ = replace$ (soiline$, "  ", " ", 0)
 		soiline$ = replace$ (soiline$, ".", "", 0)
 		soiline$ = replace$ (soiline$, ":", "", 0)
 		soiline$ = replace$ (soiline$, ",", "", 0)
@@ -193,6 +194,7 @@ procedure pickTranscription options$
 			options$ = right$(options$, len)	
 		endif		
 
+
 		len = length(options$)
 
 		#Remove "sp" segments from segments list within a word
@@ -223,9 +225,14 @@ procedure pickTranscription options$
 			endif
 		until onespace>1 or index=len_word
 
-		#Trim off trailing spaces
+		#Trim off leading and trailing spaces
 		tgrid_segments$ = left$(tgrid_segments$, index)
 		len_word = length(tgrid_segments$)
+
+		if left$(tgrid_segments$, 1) = " "
+			tgrid_segments$ = right$(tgrid_segments$, len_word-1)
+		endif
+
 		if right$(tgrid_segments$, 1) = " "
 			tgrid_segments$ = left$(tgrid_segments$, len_word-1)
 		endif
@@ -240,7 +247,14 @@ procedure pickTranscription options$
 			endif
 		until underscore=0
 
+       len_word2 = length(test_option$)
+		if left$(test_option$, 1) = " "
+			test_option$ = right$(test_option$, len_word2-1)
+		endif
+
 		#Return proper word transcription including _ and soi
+         
+
 		if test_option$ == tgrid_segments$
 			wordFound=1
 			chosen_trans$ = word_option$
@@ -249,7 +263,7 @@ procedure pickTranscription options$
 
 	#If no word found, return error message with name of word and segments
 	if wordFound ==0
-		printline No experiment file match found for word 'interval_label$' with TextGrid segments 'tgrid_segments$'
+		printline No experiment file match found for word 'interval_label$' with soi annotation .'test_option$'. and TextGrid segments .'tgrid_segments$'.
 	endif
 
 endproc
@@ -277,11 +291,11 @@ endproc
 
 ########################################################################################################################
 form Annotate Words of Interest	
-	sentence Soi_file 0_ersapro14_15_soi.txt
+	sentence Soi_file 0_darkside_soi.txt
 	sentence Id_columns experiment_item_condition
 	sentence Filename_format experiment_participant_item_condition
-	natural segTierNumber 1
-	natural wordTierNumber 2
+	natural segTierNumber 2
+	natural wordTierNumber 1
 	comment Select "Dry run" to test without saving. 
 	boolean Dry_run 1
 	comment Select "restore old before" to operate on old TextGrid files.
@@ -336,6 +350,7 @@ for i to numberOfLoops
 		Read from file... 'filename$'
 		printline
 		printline 'filename$'
+		printline soi-Annotation: 'soiline$'
 		tgrid = selected("TextGrid")
 
 		# save original tgrid	
@@ -353,7 +368,7 @@ for i to numberOfLoops
 			interval_label$ = Get label of interval... wordTierNumber w
 
 			# When the interval isn't a silence, add the word to the sentence and the list of segments
-			if interval_label$ <> "sil" and interval_label$ <> "sp"
+			if interval_label$ <> "sil" and interval_label$ <> "sp" and interval_label$ <> ""
 				# sentence$ is used only to output the annotated sentence to the user
 				if sentence$ <> ""
 					sentence$ = sentence$ + " " + interval_label$
@@ -370,7 +385,7 @@ for i to numberOfLoops
 				length = rightbrace-leftbrace-1
 				current_word$ = mid$(soiline$, leftbrace+1, length)
 				word_len = length(soiline$)
-				soiline$ = right$(soiline$, word_len-rightbrace)	
+				soiline$ = right$(soiline$, word_len-rightbrace)
 	
 				#Get the right transcription from the experiment file and match to segments
 				call pickTranscription 'current_word$'
@@ -387,8 +402,7 @@ for i to numberOfLoops
 		endfor	
 
 		soiline$ = new_soiline$
-		printline 'sentence$'
-		printline 'soiline$'
+		printline Words in textgrid: 'sentence$'
 
 		# Add new tier to textgrid		
 		select tgrid
@@ -416,14 +430,23 @@ for i to numberOfLoops
 				endif
 			until label$<>"sil" and label$<>"" or error==1
 
+            # Remove leading space
+            len_soiline=length(soiline$)
+
+		    if left$(soiline$, 1) = " "
+			    soiline$ = right$(soiline$, len_soiline-1)
+		    endif
+
 			# Get next segment in soiline and truncate
 	       		space = index(soiline$, " ")
+
 	   		if space = 0
 				seg$ = soiline$
-				space = length(soiline$)
+				space = len_soiline
 			else 
 				space=space-1
 			endif	
+
 			seg$ = left$(soiline$, space)
 			len = length(soiline$)
 			len = len - space
@@ -439,6 +462,9 @@ for i to numberOfLoops
 				seg$ = left$(seg$, (uscore-1))
 			endif
 
+
+			#printline label 'label$' seg 'seg$'
+			
 			if label$ <> seg$
 				printline Unmatched seg in labfile: 'label$' segment: 'seg$'
 			elsif soiFound=1

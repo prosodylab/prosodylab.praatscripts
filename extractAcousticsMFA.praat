@@ -188,7 +188,13 @@ for i to n
 				herePhoninterval = Get interval at time... phonTier here
 				phonLabel$ = Get label of interval... phonTier hereinterval
 
+<<<<<<< HEAD
 				followingPhonInterval = herePhoninterval + 1
+=======
+				# following phone interval for silence
+				there=wordoffset+0.001
+				followingPhonInterval = Get interval at time... phonTier there
+>>>>>>> 47cf7a5fd8609e5470a0fc53a320fa456c215ff5
 
 				# Is next interval a silence?
 				intervalSil = interval + 1

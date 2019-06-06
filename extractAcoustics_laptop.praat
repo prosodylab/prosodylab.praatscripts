@@ -13,7 +13,7 @@ form Calculate Results for Production Experiments
 	# Specify directory -- otherwise selected soundfiles will be annotated
 	sentence Sound_directory ../3_truncate_lev/truncated
 	natural Required_Tiers 3
-        natural phonTier 1
+    natural phonTier 1
 	natural wordTier 2
 	natural woiTier 3
 	#Number of pitch points per interval for average curves
