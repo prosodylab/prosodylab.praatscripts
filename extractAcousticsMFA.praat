@@ -320,7 +320,8 @@ for i to n
  	writeInfoLine ("Processed sound 'i' of 'n'. So far, 'filesconsidered' files had measures extracted.")
   endif
 
-endfor   
+endfor  
+ 
 
 writeInfoLine("Done!")
 appendInfoLine("")
