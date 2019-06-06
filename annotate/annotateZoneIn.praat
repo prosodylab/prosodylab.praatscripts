@@ -24,6 +24,8 @@ form Truncate Silence from Soundfiles
     boolean make_guess yes
 	sentence Woi_file AQFOEprod2_responses.txt
 	sentence Extension .wav
+	natural woiTier 3
+	integer wordOfInterest 1
 	boolean Soundfile_in_same_directory_as_script no
 	sentence sound_Directory ../2_data/1_soundfiles/
 	boolean makeDirectory
@@ -149,6 +151,26 @@ if make_guess and onsettime <> 0 and offsettime <> 0
 		onsetttime = 0
 		offsettime = totallength
 endif
+
+if txtgrd <> 0
+        select soundgrid
+		nTierr = Get number of tiers
+        if wordOfInterest <>0 and nTierr >= woiTier
+			ninter = Get number of intervals... 'woiTier'
+			for j to ninter
+				labint$ = Get label of interval... 'woiTier' j
+			
+				if labint$="'wordOfInterest'" or labint$="'wordOfInterest' "
+				    printline 'labint$'
+				    onsettime= Get start point... 'woiTier' j
+				    onsettime = onsettime
+				    offsettime = Get end point... 'woiTier' j
+				    offsettime = offsettime + marginsize
+				endif
+			endfor
+		endif
+endif
+
 
 
 # Truncate!
