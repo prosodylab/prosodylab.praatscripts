@@ -1,14 +1,8 @@
-# Openfiles 
-# michael. chael@mcgill.ca
+
+#  chael@mcgill.ca
 
 
-# This script opens all the sound files with a particular extension
-# and any existing collection within a particular directory.
-# the script also opens the corresponding TextGrid file, if there is one.
-# for each file for which there is no TextGridFile, 
-# a message appears in the output window on the screen.
-
-form Scale all files in a directory
+form Scale peak  of all files in a directory
   sentence Extension .wav
   boolean Soundfile_in_same_directory_as_script yes
   sentence Directory_sound /Users/chael/work_static/intonly/data/subjfil_pc/Results/11
@@ -25,7 +19,6 @@ endif
 if textGrid_in_same_directory_as_sound
      directory_grid$ = directory_sound$
 endif
-
 
 
 Create Strings as file list... list 'directory_sound$'*'extension$'

@@ -1,6 +1,8 @@
 # Calculate various acoustic variables
 # Michael Wagner. chael@mcgill.ca. July 2004/July 2009/Updated July 2014
 
+Text writing preferences: "UTF-8"
+
 echo Extract Acoustic Measures for Words and Zones
 
 # This script measures various acoustic variables in our annotated files
@@ -8,12 +10,13 @@ echo Extract Acoustic Measures for Words and Zones
 
 form Calculate Results for Production Experiments
 	sentence Name_Format experiment_participant_item_condition
-	sentence Output_Filename restwe
+	sentence Output_Filename pritl_acoustics
 	sentence extension .wav
 	# Specify directory -- otherwise selected soundfiles will be annotated
-	sentence Sound_directory ../2_data/truncated
+	sentence soundDirectory ../recordedFiles
+	sentence gridDirectory ../recordedFilesTextGrids
 	natural Required_Tiers 3
-        natural phonTier 2
+    natural phonTier 2
 	natural wordTier 1
 	natural woiTier 3
 	#Number of pitch points per interval for average curves
@@ -77,7 +80,7 @@ columnNames$ > 'output_Filename$'.txt
 # This keeps track of how many files were considered for measurements:
 filesconsidered = 0
 
-Create Strings as file list... list 'sound_directory$'/*'extension$'
+Create Strings as file list... list 'soundDirectory$'/*'extension$'
 myStrings=selected()
 n = Get number of strings
 
@@ -93,12 +96,12 @@ for i to n
    length = length - length2
    shortname$ = left$(filename$, length)
    call cutname 'shortname$'
-   grid$ = sound_directory$ + "/" + shortname$+".TextGrid"
+   grid$ = gridDirectory$ + "/" + shortname$+".TextGrid"
     if fileReadable (grid$)=0
         missinggrids+=1
 	missinggrid$= missinggrid$ + "'missinggrids'" + tab$ + shortname$+".wav" + tab$ + "No TextGrid" + newline$
     else
-	Read from file... 'sound_directory$'/'filename$'
+	Read from file... 'soundDirectory$'/'filename$'
    	mySound=selected()
         Read from file... 'grid$'
         myGrid=selected()
@@ -187,14 +190,9 @@ for i to n
 
 				herePhoninterval = Get interval at time... phonTier here
 				phonLabel$ = Get label of interval... phonTier hereinterval
-
-<<<<<<< HEAD
-				followingPhonInterval = herePhoninterval + 1
-=======
-				# following phone interval for silence
 				there=wordoffset+0.001
+
 				followingPhonInterval = Get interval at time... phonTier there
->>>>>>> 47cf7a5fd8609e5470a0fc53a320fa456c215ff5
 
 				# Is next interval a silence?
 				intervalSil = interval + 1

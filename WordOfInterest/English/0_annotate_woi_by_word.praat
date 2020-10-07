@@ -1,5 +1,5 @@
 # Annotate words of interest
-echo Annotate Words of Interest
+echo Annotate Words of Interest 
 
 
 # This procedure saves the id-column-names in an array (column_name'number'))
