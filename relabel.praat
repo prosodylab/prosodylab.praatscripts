@@ -1,10 +1,38 @@
-# Annotate words of interest
-echo Annotate Words of Interest
+# Relable (chael@mcgill.ca)
+echo Write transcription into .lab files for each soundfile in a directory
 
+
+# script that creates .lab files with a transcription for soundfiles 
+# it looks up labels in a spreadsheet contains a lab colum
+# it can identify the right row in the spreadsheet in one of two ways:
+#  (i) using the filename (spreadsheet should contain column with soundfilename)
+#  (ii) by parsing the name for identifying information separated by underscores (you have to specify the filename structure, e.g.: experiment_participant_item_condition)
+# it will then look up columns that contain that information ('id columns', e.g.: experiment_item_condition)
+ 
+
+form Annotate Words of Interest	
+	sentence fileWithLabColumn ../../wordi.txt
+    comment Either go by whole file name or parse filename and look up id columns:
+    boolean parseName yes
+    # if not parsing filename, give filename column
+    sentence fileNameColumn recordedFile
+    # if parsing filename, give filename format and specify id columns
+	sentence Id_columns experiment_item_condition
+    sentence Filename_format experiment_participant_item_condition
+    choice Case: 2 
+       button keep same
+       button upper case
+       button lower case
+    boolean RemovePunctuation yes
+	boolean Dry_run 1
+endform
+
+
+procedure idColumns columns$
 
 # This procedure saves the id-column-names in an array (column_name'number'))
 # and identifies how many identifying columns there are (numberColumns)
-procedure idColumns columns$
+
 
 numberColumns = 0
 
@@ -28,10 +56,13 @@ until columns$=""
 endproc
 
 
+
+
+procedure columnIndex name$
+
 # This procedure identifies where the name 
 # the information corresponding to the id-columns is.
 
-procedure columnIndex name$
 
 currentColumn = 0
 
@@ -66,14 +97,16 @@ endif
 endproc
 
 
+
+
+procedure parsename txt$
+
 # This precedure identifies the right textline in the _woi file for a given sound file
 # if there no corresponding line, then an empty string is returned.
 
-procedure parsename txt$
 	columnCount = 0
-	select woi_file
-	nrows = Get number of rows
-
+	select labFile
+	
 	repeat 
 		columnCount = columnCount + 1
 		seperator = index (txt$, "_")
@@ -100,11 +133,18 @@ procedure parsename txt$
 endproc
 
 
-procedure getWoiLine
+procedure getLabel
 
-	rw = 0
-	woiline$ = ""
+  select labFile 
+  rw = 0
+  labText$ = ""
 
+  if parseName
+
+    # get relevant information from filename by parsing it based on underscores
+    call parsename 'filename$'
+
+    # look up id columns to see which line is the right one
 	repeat
 		rw = rw + 1
 
@@ -117,77 +157,61 @@ procedure getWoiLine
 			endif
 		endfor
 		
-
 		if yessir
-				woiline$ = Get value... 'rw' lab
-			
+			labText$ = Get value... 'rw' lab
 		endif
 
-		endif
+      until  (labText$ <> "") or (rw = nrows)
+   else
+     # just look up filename in fileNameColumn
 
-		woiline$ =replace_regex$(woiline$, ".", "\U&", 0)
-		woiline$ = replace$ (woiline$, ".", "", 0)
-		woiline$ = replace$ (woiline$, ":", "", 0)
-		woiline$ = replace$ (woiline$, ",", "", 0)
-		woiline$ = replace$ (woiline$, """", "", 0)
-		woiline$ = replace$ (woiline$, "  ", " ", 0)
+     repeat
+       rw = rw + 1
+       rowFileName$ = Get value... 'rw' 'fileNameColumn$'
 
+       if filename$ = rowFileName$
+            labText$ = Get value... 'rw' lab
+       endif
 
-until  (woiline$ <> "") or (rw = nrows)
+     until (labText$ <> "") or (rw = nrows)
+     
+   endif
+
+   # delete punctuation and turn into upper case
+   if labText$ <> ""
+       if case$ = "upper case"
+         labText$ =replace_regex$(labText$, ".", "\U&", 0)
+       endif 
+      
+       if case$ = "lower case"
+         labText$ =replace_regex$(labText$, ".", "\L&", 0)
+       endif 
+
+       if removePunctuation		
+          labText$ = replace$ (labText$, ".", "", 0)
+	      labText$ = replace$ (labText$, ":", "", 0)
+	      labText$ = replace$ (labText$, ",", "", 0)
+	      labText$ = replace$ (labText$, """", "", 0)
+	      labText$ = replace$ (labText$, "  ", " ", 0)
+       endif
+   endif
 
 endproc
 
 
-procedure parseline 
-# this procedure returns the next woi and its label and returns a pruned string
-# nextWoi$ extracted from  textline$, nextLabel$ determined, textline$ is pruned
+#
+#
+# Main script continues
+#
+#
 
-woiFound = 0
-
-repeat
-
-space = index(woiline$, " ")
-word$ = left$(woiline$, space)
-
-if space = 0
-	word$ = woiline$
-	space = length(woiline$)
-endif
-
-uscore = index(word$, "_")
-
-if uscore <> 0
-	woiCount = woiCount + 1
-	nextWoi$ = left$(word$, (uscore-1))
-	leng = space - uscore
-	nextLabel$ = mid$(woiline$, (uscore+1), leng)
-	woiFound = 1
-endif 
-
-len = length(woiline$)
-len = len - space
-woiline$ = right$(woiline$,len)
-len = length(woiline$)
-
-until (woiFound = 1) or (len=0)
-
-endproc
-
-
-
-form Annotate Words of Interest	
-	sentence Woi_file ../../1_experiment/mlteuf8.txt
-	sentence Id_columns experiment_item_condition
-	sentence Filename_format experiment_participant_item_condition_file
-	natural wordTierNumber 2
-	boolean Dry_run 1
-endform
 
 call idColumns 'id_columns$'
 
-#  Read in woi file
-Read Table from tab-separated file... 'woi_file$'
-woi_file = selected("Table")
+#  Read in spreadsheet with lab column
+Read Table from tab-separated file... 'fileWithLabColumn$'
+labFile = selected("Table")
+nrows = Get number of rows
 
 # 
 call columnIndex  'filename_format$'
@@ -204,33 +228,37 @@ else
 		numberOfLoops = numberOfFiles
 endif
 
+
 for i to numberOfLoops
 
 	select filenames
 	filename$ = Get string... i
 	
-	# get correct textline$ with woi annotation
-	call parsename 'filename$'
-	call getWoiLine
+	# get correct line and look up lab annotation
+	call getLabel
 
-        if woiline$<>""
+    printline Filename: 'filename$'
+    printline Transcription: 'labText$'
+
+    if labText$<>""
 		len=length(filename$)
 		len=len-4
 		filename$=left$(filename$,len)
-		printline 'filename$'
-		printline lab 'woiline$'
 
 		# save original tgrid	
 		if dry_run<>1
-			 woiline$ > 'filename$'.lab
+			 labText$ > 'filename$'.lab
 		endif
-
+    else
+      printline No label found!
 	endif
+ 
+   printline
 
 endfor
 
 
-select woi_file
+select labFile
 Remove
 
 select filenames

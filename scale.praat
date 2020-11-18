@@ -32,8 +32,9 @@ for ifile to numberFiles
 
   if filename$ <> "openfiles.praat"
   	Read from file... 'directory_sound$''filename$'
+    name$ = selected$("Sound")
 	Scale peak... 0.99
-	Write to WAV file... 'directory_sound$''filename$'
+	Write to WAV file... 'directory_sound$''name$'.wav
 	Remove
    endif
 
