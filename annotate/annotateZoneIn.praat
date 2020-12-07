@@ -70,7 +70,7 @@ form Annotation
 		option don't annotate this condition
     natural restrictCondition 1
     comment Restrict experiment?
-	optionmenu experimentRestriction: 1
+	optionmenu experimentRestriction: 3
 		option No
 		option only annotate this experiment
 		option don't annotate this experiment
@@ -482,23 +482,26 @@ editor 'editorname$' soundname
   beginPause: "Annotation/Truncation"
 	boolean: "TruncateAndSaveSound" , 'truncate'
 	boolean: "SaveLabFile", 'truncate'
-	choice: "tuneBeginning", 4 
-		option: "Rise"
-		option: "High"
-		option: "H*"
+	choice: "tuneBeginning", 1
 		option: "Unclear"
-	choice: "tuneEnd", 4 
+		option: "Rise"
+		option: "High-Level"
+		option: "Low-Level"
+		option: "H*"
+		option: "H* L%"
+	choice: "tuneEnd", 1
+		option: "Unclear"
 		option: "EarlyFall"
 		option: "LateFall"
 		option: "H*"
 		option: "Deaccented"
-		option: "Unclear"
 	sentence: "comments", ""
 	optionMenu: "Quality", 1
 		option: "OK"
 		option: "Not Fluent"
 		option: "Not Native"
 		option: "Did not do task"
+		option: "Recording cut off"
 		option: "Recording didn't work"
 		option: "Testrun"
 		option: "Problematic"
