@@ -35,6 +35,7 @@ printline
 
 form Annotation
     sentence annotator nameAnnotator
+    boolean RandomizePresentationOrder yes
     boolean CreateNewResponsesFile no
     boolean AddRowsForNewSoundFiles no
 	sentence responsesFile althutAnnotation.txt
@@ -174,7 +175,8 @@ if createNewResponsesFile
      Permute randomly... 1 'length'
      randomizedPermutation = selected("Permutation")
      plus fileList
-     Permute strings
+     # Uncomment following line to make order or rows random
+     # Permute strings
      Insert string... 1 recordedFile
      Save as raw text file... 'responsesFile$'
      Remove
@@ -210,7 +212,7 @@ if addRowsForNewSoundFiles
 	 for i from 1 to numberOfFiles
 
         select fileList
-        soundName$ = Get string... 'i'
+        soundName$ = Get string... 'file'
 
         select responseFile
         fileAlreadyThere = Search column... recordedFile 'soundName$'
@@ -249,6 +251,15 @@ responsesFile = selected("Table")
 trials = Get number of rows
 
 
+# Set presentation order
+if randomizePresentationOrder
+  Create Permutation... PresentationOrder 'trials' no
+else
+  Create Permutation... PresentationOrder 'trials' yes
+endif
+
+presentationOrder = selected("Permutation")
+
 # Add annotator columns if they aren't already theres
 if newAnnotation 
 	select responsesFile
@@ -264,18 +275,20 @@ if newAnnotation
 endif
 
 
-
 for i from 1 to trials
 
+  select presentationOrder
+  file = Get value... 'i'
+  
   select responsesFile
-  filename$ = Get value... 'i' recordedFile
+  filename$ = Get value... 'file' recordedFile
   soundfile$ = soundDirectory$ + "/" + filename$
 
   annotateThisFile = 1
 
   # check if already annotated
 
-  annot$ = Get value... 'i' 'annotator$'_quality
+  annot$ = Get value... 'file' 'annotator$'_quality
 
   if (annot$ <> "" and annot$ <> "?")
     annotateThisFile = 0
@@ -304,7 +317,7 @@ for i from 1 to trials
   if annotateThisFile = 1
 
     if fileReadable(soundfile$) = 0
-      printline 'i'/'trials': File 'filename$' not readable
+      printline 'i'/'trials': File 'filename$' (row: 'file') not readable
     else
       Read from file... 'soundfile$'
       soundfile = selected("Sound")
@@ -321,7 +334,7 @@ for i from 1 to trials
       experiment$ = relevantPart$
 
       # output information about trial
-      printline 'i'/'trials': 'filename$'
+      printline 'i'/'trials': 'filename$' Row: 'file'
       printline   Experiment: 'experiment$' Participant: 'participant$'
 
           
@@ -532,10 +545,10 @@ endeditor
 select responsesFile
 
 if applyQualitytoAllfilesofParticipant = 0	
-	Set string value... 'i' 'annotator$'_tuneBeginning 'tuneBeginning$'
-	Set string value... 'i' 'annotator$'_tuneEnd 'tuneEnd$'
-	Set string value... 'i' 'annotator$'_quality 'quality$'
-	Set string value... 'i' 'annotator$'_comments 'comments$'
+	Set string value... 'file' 'annotator$'_tuneBeginning 'tuneBeginning$'
+	Set string value... 'file' 'annotator$'_tuneEnd 'tuneEnd$'
+	Set string value... 'file' 'annotator$'_quality 'quality$'
+	Set string value... 'file' 'annotator$'_comments 'comments$'
 else
 	# check whether there is a column 'participant'. If not, use column 'recordedFile
 	participantColumn = Get column index... "participant"
@@ -629,6 +642,7 @@ endif
 endfor
 
 
-select responsesFile
+select presentationOrder
+plus responsesFile
 Remove
 
