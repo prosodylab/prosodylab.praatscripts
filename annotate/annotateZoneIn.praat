@@ -41,13 +41,16 @@ form Annotation
 	sentence Extension .wav
 	boolean Soundfile_in_same_directory_as_script no
 	sentence soundDirectory ../recordedFilesWav
-	sentence gridDirectory
 	sentence filenameFormat experiment_participant_item_condition
     comment Start new annotation?
 	boolean newAnnotation 0
+	boolean makeDirectory
+    comment Load TexgGrids, or create new from template?
+	sentence gridDirectory
+    boolean CreateTextGridFromTemplate no
+	sentence templateGrid template.TextGrid
     comment Save sound, lab, and Textgrid?
 	boolean truncate yes
-	boolean makeDirectory
     comment Make guess of what part of sound to keep?
     boolean make_guess no
 	natural silenceThreshhold 50
@@ -262,8 +265,6 @@ endif
 
 
 
-
-
 for i from 1 to trials
 
   select responsesFile
@@ -329,14 +330,28 @@ for i from 1 to trials
       length = length - length2
       short$ = left$(filename$, length)
 
-      # Read TextGrid if there is one
+      txtgrd = 0
+
+      # Create textrid from template if desired, or read one from folder
+      if createTextGridFromTemplate
+         if fileReadable (templateGrid$)
+           txtgrd = 1
+           Read from file... 'templateGrid$'
+           soundgrid = selected("TextGrid")
+         else
+           exitScript: "Can't read template TextGrid 'templateGrid$'!"
+         endif
+      endif    
 
       grid$ = gridDirectory$ + "/" +short$+".TextGrid"
       gridshort$ = short$+".TextGrid"
-      txtgrd = 0
+
+      if fileReadable (grid$) & txtgrd = 1
+        exitScript: "There is already a TextGrid at 'grid$'!"
+      endif
 
       if fileReadable (grid$)
-        txtgrd = 1
+        txtgrd = 2
         Read from file... 'grid$'
         soundgrid = selected("TextGrid")
       endif
@@ -355,7 +370,7 @@ for i from 1 to trials
 		Remove
 
 		# add lab to textgrid if there is one, otherwise create new textgrid
-	    if txtgrd = 1
+	    if txtgrd <> 0
           select soundgrid
           Insert interval tier... 1 'lab'
           woiTier = woiTier + 1
@@ -504,7 +519,7 @@ editor 'editorname$' soundname
   Extract selected sound (time from 0)
   nsound=selected("Sound")
 
-  if (txtgrd = 1) or (lab = 1)
+  if (txtgrd <> 0) or (lab = 1)
     Extract selected TextGrid (time from 0)
     newsoundgrid = selected("TextGrid")
   endif
@@ -562,16 +577,26 @@ if truncateAndSaveSound
   printline Saved soundfile 'filename$'
 
   # save truncated grid if there is one	
-  if txtgrd = 1
+  if txtgrd <> 0
+    select newsoundgrid 
+    if lab = 1
+	  # Remove tier with lab-file content
+      Remove tier... 1
+    endif
+    Write to text file... truncated/'gridshort$'
+    printline Saved TextGrid 'gridshort$'
+  endif
+endif
+
+# If TextGrid generated from Template, save even if not truncating
+if (truncateAndSaveSound) = 0 & txtgrd = 1
   select newsoundgrid 
   if lab = 1
-	# Remove tier with lab-file content
+    # Remove tier with lab-file content
     Remove tier... 1
   endif
   Write to text file... truncated/'gridshort$'
   printline Saved TextGrid 'gridshort$'
-  endif
-	
 endif
 
 
@@ -587,7 +612,7 @@ select nsound
 Remove
 
 
-if (txtgrd = 1) or (lab = 1)
+if (txtgrd <> 0) or (lab = 1)
   select soundgrid 
   Remove
   select newsoundgrid 
