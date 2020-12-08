@@ -1,12 +1,26 @@
-# Filter Files 
-# michael wagner. chael@mcgill.ca. August 2009
+# Annotation/truncation script 
+# michael wagner. chael@mcgill.ca. 2009/2020
 
 Text writing preferences: "UTF-8"
 
 #
-# Every soundfile in the folder is brought up in an editor window, the suggested truncation is selected.
+# Every soundfile in the folder is brought up in an editor window
+# you have to edit the annotation categories by hand
+#
+# -- make sure correct columns are added
+# -- make sure that annotations are stored in correct column before saving spreadsheet again
+# -- when you anntoate, always check after annotation one file whether things are propertly recorded
+
+# You can use an existing spreadsheet and add annotation columns to that
+# Or you can generate a new spreadsheet based on all sound files in a directory
+# If you generate a new file, the order of rows will be randomized
+# If you use an existing files, it assumes that they are already in the order you want to annotate in
+
+# When you truncate:
+# You can have the script make a case what's the part that you want to keep
 # You can change the selection by hand.
-# Whatever is selected when you hit 'continue' is what the soundfile will be truncated to.
+# Whatever is selected when you hit 'continue' is what the soundfile will be truncated to
+# The lab text or textgrid will also be saved
 #
 # If directories truncated/ and untruncated/ don't exist yet, click on 'make directories'
 # The script automatically also truncates the textgrid file if there is one, 
@@ -15,291 +29,620 @@ Text writing preferences: "UTF-8"
 # A truncation log is kept, so the script can look up which files where already truncated before.
 #
 
-echo Truncate Silence from Soundfiles
+echo Annotation Script
 printline
 
-form Truncate Silence from Soundfiles
-    sentence annotator Michael
-	natural silenceThreshhold 50
-	sentence Woi_file givrep4_responses_Michael.txt
+
+form Annotation
+    sentence annotator nameAnnotator
+    boolean RandomizePresentationOrder yes
+    boolean CreateNewResponsesFile no
+    boolean AddRowsForNewSoundFiles no
+	sentence responsesFile althutAnnotation.txt
 	sentence Extension .wav
 	boolean Soundfile_in_same_directory_as_script no
-	sentence sound_Directory ../1_soundfiles/
+	sentence soundDirectory ../recordedFilesWav
+	sentence filenameFormat experiment_participant_item_condition
+    comment Start new annotation?
+	boolean newAnnotation 0
 	boolean makeDirectory
-	boolean addcolumn 0
-	boolean truncate no
+    comment Load TexgGrids, or create new from template?
+	sentence gridDirectory
+    boolean CreateTextGridFromTemplate no
+	sentence templateGrid template.TextGrid
+    comment Save sound, lab, and Textgrid?
+	boolean truncate yes
+    comment Make guess of what part of sound to keep?
     boolean make_guess no
-	comment Zoning in? (set woiTier to 0 if not)
-	natural woiTier 4
-	integer wordOfInterest 0
-    positive marginSize 0.2
+	natural silenceThreshhold 50
+    comment Zone in to to part of file?
+	optionmenu ZoneIn: 1
+		option No
+		option up to word of interest
+		option as of word of interest
+		option start after word of interest
+    natural woiTier 3
+	integer zoneWOI 1
+    positive marginSize 0.1
+    comment Restrict conditions?
+	optionmenu conditionRestriction: 1
+		option No
+		option only annotate this condition
+		option don't annotate this condition
+    natural restrictCondition 1
+    comment Restrict experiment?
+	optionmenu experimentRestriction: 3
+		option No
+		option only annotate this experiment
+		option don't annotate this experiment
+    sentence restrictExperiment micCheck
 endform
 
+# Store names of the parts of the filename 
+call storeNameParts 'filenameFormat$'
 
-#  Read in woi file
-Read Table from tab-separated file... 'woi_file$'
-woi_file = selected("Table")
 
-if addcolumn 
-	select woi_file
-	Append column... 'annotator$'_shift
-	Append column... 'annotator$'_quality
-	Append column... 'annotator$'_comments
+procedure storeNameParts nameFormat$
+  #
+  #
+  # This procedure saves the nameParts in an array (namePart'number'))
+  # and identifies how many identifying parts there are (numberNameParts)
+  #
+  numberNameParts = 0
+  
+  repeat
+  
+    numberNameParts = numberNameParts + 1
+
+	seperator = index (nameFormat$, "_")
+	if seperator = 0
+		namePart'numberNameParts'$ = nameFormat$
+		nameFormat$ = ""
+	else
+		namePart'numberNameParts'$  = left$(nameFormat$,seperator-1)
+		len = length(nameFormat$)
+		len = len - seperator
+		nameFormat$ = right$(nameFormat$, len)
+	endif	
+
+  until nameFormat$ = ""
+
+endproc
+
+
+procedure parsename fileName$ namePart$
+#
+# This procedure parses the file name
+# based on the variable filenameFormat
+# This is useful so that one can find the participant information
+# and if necessary mark all files of a participant as problematic/non-native/etc.
+# and thereby avoid having to annotate them all
+#
+
+    partCount = 0
+    relevantPart$ = ""
+
+	repeat 
+		partCount = partCount + 1
+
+		# cut next part of name up to underscore or extension
+		seperator = index (fileName$, "_")
+		if seperator = 0
+			seperator = index (fileName$,".")
+			currentPart$ = left$(fileName$,seperator-1)
+			fileName$ = ""
+		else
+			currentPart$ = left$(fileName$, seperator-1)
+			len = length(fileName$)
+			len = len - seperator
+			fileName$ = right$(fileName$, len)
+		endif
+
+        if namePart'partCount'$ = 'namePart$'
+          relevantPart$ = currentPart$
+        endif
+
+	until fileName$ = ""
+endproc
+
+# If trying to zone in to word of interest, show which one:
+if zoneIn <> 1
+    printline Script tries to zone in to 'zoneIn$': 'zoneWOI'
 endif
 
 if makeDirectory
-	system mkdir truncated
-	system mkdir problematic
+  system mkdir truncated
 endif 
 
 if soundfile_in_same_directory_as_script
-    directory_sound$ = ""
+  directory_sound$ = ""
 else
-     directory_sound$ = "'directory_sound$'/"
+  directory_sound$ = "'directory_sound$'/"
 endif   
 
-trials = Get number of rows
 
-for i from 1 to trials
+# Create response files with all .wav files names in random order
+#
+if createNewResponsesFile
+   if fileReadable(responsesFile$)
+	 exitScript: "There already exists a response file with the name 'responsesFile$'!"
+   else
+     Create Strings as file list... responsesFile 'soundDirectory$'/*.wav
+     fileList = selected("Strings")
+     To Permutation... no
+     length = Get number of elements
+     permutation = selected("Permutation")
+     Permute randomly... 1 'length'
+     randomizedPermutation = selected("Permutation")
+     plus fileList
+     # Uncomment following line to make order or rows random
+     # Permute strings
+     Insert string... 1 recordedFile
+     Save as raw text file... 'responsesFile$'
+     Remove
+     select fileList
+     Remove
+     select permutation
+     Remove
+     select randomizedPermutation
+     Remove
+  endif
+endif
 
-    select woi_file
-    annot$ = Get value... 'i' 'annotator$'_shift
-    condition = Get value... 'i' condition
+# Add rows for new soundfiles if desired and save file
 
-    if (annot$ = "" or annot$ ="?")
-        filename$ = Get value... 'i' recordedFile
-	    printline 'filename$' 'i'/'trials'
-	    soundfile$ = sound_Directory$ + filename$
+if addRowsForNewSoundFiles
+   if fileReadable(responsesFile$) = 0
+     exitScript: "There is not file 'responsesFile$'yet!"
+   else
 
+     filesAdded = 0
 
- 	    if fileReadable(soundfile$)
-    
-          Read from file... 'soundfile$'
-          soundfile = selected("Sound")
-          
-	      length = length(filename$)
-	      length2 = length(extension$)
-	      length = length - length2
-  	      short$ = left$(filename$, length)
+     Read Table from tab-separated file... 'responsesFile$'
+     responseFile = selected("Table")
 
-	      grid$ = sound_Directory$+short$+".TextGrid"
-	      gridshort$ = short$+".TextGrid"
+     numberRows = Get number of rows
 
-	      lab$ = sound_Directory$+short$+".lab"
-	      labshort$ = short$ + ".lab"
+	 # list of soundfiles
+     Create Strings as file list... fileList 'soundDirectory$'/*.wav
+     fileList = selected("Strings")
 
-	      txtgrd = 0
- 
-    	  if fileReadable (grid$)
-          	Read from file... 'grid$'
-	  	    Insert interval tier... 1 sound
-	  	    txtgrd = 1
-	  	    soundgrid = selected("TextGrid")	
-     	  elsif fileReadable(lab$)
-	  	    txtgrd = 2
-		    select soundfile
-	  	    To TextGrid... label
-	  	    soundgrid = selected("TextGrid")
-	  	    Read Strings from raw text file... 'lab$'
-	 	    labelfile = selected("Strings")
-	  	    label$ = Get string... 1
-	 	    Remove
-	   	    select soundgrid
-           	Set interval text... 1 1 'label$'
-	      endif
+     numberOfFiles = Get number of strings
 
-        printline 'lab$' 'txtgrd' textgrid
+	 for i from 1 to numberOfFiles
 
-        select soundfile
-        totallength = Get end time
+        select fileList
+        soundName$ = Get string... 'file'
 
-        onsettime = 0
-        offsettime = totallength
+        select responseFile
+        fileAlreadyThere = Search column... recordedFile 'soundName$'
 
-# Make guess about begin and end of sondfile
+		if fileAlreadyThere = 0
+          Append row
+          numberRows = numberRows + 1
+          Set string value... numberRows "recordedFile" 'soundName$'
+          filesAdded = filesAdded + 1
+        endif
 
-if make_guess
-     select soundfile
-     To Intensity... 100 0
-     soundintense = selected("Intensity")
-     n = Get number of frames
+     endfor
 
-     onsetfound = 0	
-     offsetfound = 0
+     if filesAdded <> 0
+       Write to table file... 'responsesFile$'
+     endif
+     
+     select fileList
+     #Remove
+     select responseFile
+     #Remove
 
-    for y to n
-	    intensity = Get value in frame... y	
-     	if intensity < silenceThreshhold and onsetfound = 1 and offsetfound = 0
-		  offsettime =  Get time from frame... y
-		  offsetfound = 1
-		  if (offsettime+marginSize)<=totallength
-		    offsettime=offsettime+marginSize
-          endif
-	    elsif intensity > silenceThreshhold and onsetfound = 0
-		  onsettime =  Get time from frame... y
-          onsetfound = 1
-		  # add a little silence at beginning:
-		  if (onsettime-marginSize)>0
-		    onsettime=onsettime-marginSize
-          endif
-	    elsif intensity > silenceThreshhold
-		  offsetfound = 0
-	    endif
-    endfor	
+     printline Files added to spreadsheet: 'filesAdded'
+     printline
+
+  endif
 endif
 
 
-zoneIn = 0
 
-if txtgrd <> 0 and woiTier <> 0
+
+# Read in response file
+Read Table from tab-separated file... 'responsesFile$'
+responsesFile = selected("Table")
+
+trials = Get number of rows
+
+
+# Set presentation order
+if randomizePresentationOrder
+  Create Permutation... PresentationOrder 'trials' no
+else
+  Create Permutation... PresentationOrder 'trials' yes
+endif
+
+presentationOrder = selected("Permutation")
+
+# Add annotator columns if they aren't already theres
+if newAnnotation 
+	select responsesFile
+    alreadyThere = Get column index... "'annotator$'_quality"
+    if alreadyThere = 1
+        exitScript: "Column 'annotator$'_quality already exists!"
+    else
+		Append column... 'annotator$'_tuneBeginning
+		Append column... 'annotator$'_tuneEnd
+		Append column... 'annotator$'_quality
+		Append column... 'annotator$'_comments
+    endif
+endif
+
+
+for i from 1 to trials
+
+  select presentationOrder
+  file = Get value... 'i'
+  
+  select responsesFile
+  filename$ = Get value... 'file' recordedFile
+  soundfile$ = soundDirectory$ + "/" + filename$
+
+  annotateThisFile = 1
+
+  # check if already annotated
+
+  annot$ = Get value... 'file' 'annotator$'_quality
+
+  if (annot$ <> "" and annot$ <> "?")
+    annotateThisFile = 0
+  endif
+	
+  # restrict to certain conditions if desired
+  if conditionRestriction$ <> "No"
+    call parsename 'filename$' "condition"
+    if (conditionRestriction$ = "only annotate this condition") and (relevantPart$ <> "'restrictCondition'")
+      annotateThisFile = 0
+    elsif (conditionRestriction$ = "don't annotate this condition") and (relevantPart$ = "'restrictCondition'")
+      annotateThisFile = 0
+    endif
+  endif
+
+  # restrict to certain experiments if desired
+  if experimentRestriction$ <> "No"
+    call parsename 'filename$' "experiment"
+    if (experimentRestriction$ = "only annotate this experiment") and (relevantPart$ <> restrictExperiment$)
+      annotateThisFile = 0
+    elsif (experimentRestriction$ = "don't annotate this experiment") and (relevantPart$ = restrictExperiment$)
+      annotateThisFile = 0
+    endif
+  endif
+
+  if annotateThisFile = 1
+
+    if fileReadable(soundfile$) = 0
+      printline 'i'/'trials': File 'filename$' (row: 'file') not readable
+    else
+      Read from file... 'soundfile$'
+      soundfile = selected("Sound")
+      totallength = Get end time
+      onsettime = 0
+      offsettime = totallength
+
+      # extract participant name from soundfilename
+      call parsename 'filename$' "participant"
+      participant$ = relevantPart$
+
+      # extract experiment name from sounfilename
+      call parsename 'filename$' "experiment"
+      experiment$ = relevantPart$
+
+      # output information about trial
+      printline 'i'/'trials': 'filename$' Row: 'file'
+      printline   Experiment: 'experiment$' Participant: 'participant$'
+
+          
+      length = length(filename$)
+      length2 = length(extension$)
+      length = length - length2
+      short$ = left$(filename$, length)
+
+      txtgrd = 0
+
+      # Create textrid from template if desired, or read one from folder
+      if createTextGridFromTemplate
+         if fileReadable (templateGrid$)
+           txtgrd = 1
+           Read from file... 'templateGrid$'
+           soundgrid = selected("TextGrid")
+         else
+           exitScript: "Can't read template TextGrid 'templateGrid$'!"
+         endif
+      endif    
+
+      grid$ = gridDirectory$ + "/" +short$+".TextGrid"
+      gridshort$ = short$+".TextGrid"
+
+      if fileReadable (grid$) & txtgrd = 1
+        exitScript: "There is already a TextGrid at 'grid$'!"
+      endif
+
+      if fileReadable (grid$)
+        txtgrd = 2
+        Read from file... 'grid$'
+        soundgrid = selected("TextGrid")
+      endif
+
+      # Read lab file if there is one
+
+      lab$ = soundDirectory$ + "/" + short$+".lab"
+      labshort$ = short$ + ".lab"
+      lab = 0
+
+      if fileReadable(lab$)
+        lab = 1
+        Read Strings from raw text file... 'lab$'
+		labelfile = selected("Strings")
+		label$ = Get string... 1
+		Remove
+
+		# add lab to textgrid if there is one, otherwise create new textgrid
+	    if txtgrd <> 0
+          select soundgrid
+          Insert interval tier... 1 'lab'
+          woiTier = woiTier + 1
+        else
+          select soundfile  
+          To TextGrid... lab
+          soundgrid = selected("TextGrid")
+        endif
+
+        Set interval text... 1 1 'label$'
+      endif
+
+
+      # Make guess about begin and end of sondfile
+      if make_guess
+        select soundfile
+        To Intensity... 100 0
+        soundintense = selected("Intensity")
+        n = Get number of frames
+
+        onsetfound = 0	
+        offsetfound = 0
+
+        for y to n
+          intensity = Get value in frame... y	
+          if intensity < silenceThreshhold and onsetfound = 1 and offsetfound = 0
+            offsettime =  Get time from frame... y
+            offsetfound = 1
+            if (offsettime+marginSize)<=totallength
+              offsettime=offsettime+marginSize
+            endif
+          elsif intensity > silenceThreshhold and onsetfound = 0
+            onsettime =  Get time from frame... y
+            onsetfound = 1
+            # add a little silence at beginning:
+            if (onsettime-marginSize)>0
+              onsettime=onsettime-marginSize
+            endif
+          elsif intensity > silenceThreshhold
+            offsetfound = 0
+          endif
+        endfor	
+      endif
+
+
+      if txtgrd <> 0 and zoneIn$ <> "No"
         select soundgrid
-		nTierr = Get number of tiers
-        if nTierr >= woiTier
+		nTier = Get number of tiers
+        if nTier >= woiTier
 			ninter = Get number of intervals... 'woiTier'
 			for j to ninter
 				labint$ = Get label of interval... 'woiTier' j
 			
-				if labint$="'wordOfInterest'" or labint$="'wordOfInterest' "
-				    printline Zone in to woi: 'labint$'
-				    onsettime= Get start point... 'woiTier' j
-		            if (onsettime-marginSize)>0
-		              onsettime=onsettime-marginSize
-                      endif
-                      zoneIn = 1
-				endif
+				if labint$="'zoneWOI'" or labint$="'zoneWOI' "
+				    printline Zone in 'zoneIn$': 'labint$'
+
+                   if zoneIn$="up to word of interest" 
+ 
+				    	offsettime= Get end point... 'woiTier' j
+						if (offsettime+marginSize)<totallength
+		              		offsettime=offsettime+marginSize
+                      	endif
+
+                   elsif zoneIn$="start after word of interest"
+
+				    	onsettime= Get end point... 'woiTier' j
+						if (onsettime+marginSize)<totallength
+		              		onsettime=onsettime+marginSize
+                      	endif
+
+					else
+				    	onsettime= Get start point... 'woiTier' j
+		            	if (onsettime-marginSize)>0
+		              		onsettime=onsettime-marginSize
+                      	endif
+
+				   endif
+              endif
 			endfor
 		else
-			printline "No tier 'woiTier' for looking up woi and zoning in"
+			printline "There is no tier 'woiTier' to zone in, there are only 'nTier' tiers"
         endif
-endif
+      endif
 
 
+      # Annotate and truncate
 
-# Truncate!
+      # Anonymize filenames so condition is not apparent
 
-		select soundgrid 
-		Rename... soundname
+      select soundgrid 
+      Rename... soundname
 
-		select soundfile
-		editorname$ = "Sound"
+      select soundfile
+      Rename... soundname
+      editorname$ = "Sound"
 
-		if txtgrd <> 0
-			plus soundgrid
-			editorname$ = "TextGrid"
-		endif
+      if (txtgrd <> 0) or (lab <> 0)
+      	plus soundgrid
+      	editorname$ = "TextGrid"
+      endif
 
-		Edit
-		 editor 'editorname$' soundname
-			 	Select... onsettime offsettime	
-				if zoneIn=1
-					Zoom to selection
-				endif
+Edit
+editor 'editorname$' soundname
+  Select... onsettime offsettime	
+  if zoneIn$ <> "No"
+	Zoom to selection
+  endif
 				
-				beginPause("Annotation/Truncation")
-					boolean ("Problematic",0)
-                   boolean ("Truncate",'truncate')
-					boolean ("SaveWavAndLabFile",'truncate')
-				    anno = choice ("shift",1)
-					        option ("No Shift")
-					        option ("Shift to adjective")
-                    	    option ("Unclear")
-                   			option ("Problematic")
-                    anno = choice ("quality",1)
-                   	        option ("ok")
-                   	        option ("Not Fluent")
-					        option ("Problematic")
-                    sentence("comments","")
-				clicked = endPause("Continue",1)
+  beginPause: "Annotation/Truncation"
+	boolean: "TruncateAndSaveSound" , 'truncate'
+	boolean: "SaveLabFile", 'truncate'
+	choice: "tuneBeginning", 1
+		option: "Unclear"
+		option: "Rise"
+		option: "High-Level"
+		option: "Low-Level"
+		option: "H*"
+		option: "H* L%"
+	choice: "tuneEnd", 1
+		option: "Unclear"
+		option: "EarlyFall"
+		option: "LateFall"
+		option: "H*"
+		option: "Deaccented"
+	sentence: "comments", ""
+	optionMenu: "Quality", 1
+		option: "OK"
+		option: "Not Fluent"
+		option: "Not Native"
+		option: "Did not do task"
+		option: "Recording cut off"
+		option: "Recording didn't work"
+		option: "Testrun"
+		option: "Problematic"
+		option: "Alignment off"
+		option: "WOI annotation didn't work"
+	comment: "Check the following to avoid annotation/truncation of remaining files of"
+	comment: "participant: 'participant$'"
+	boolean: "applyQualitytoAllfilesofParticipant", 0
+  clicked = endPause: "Continue", 1
 				
-			   if truncate = 0
-				   Select... onsettime offsettime
-			   else
-				   onsettime = Get start of selection
-				   offsettime = Get end of selection
-		       endif		
+  if truncateAndSaveSound = 0
+    Select... onsettime offsettime
+  else
+    onsettime = Get start of selection
+    offsettime = Get end of selection
+  endif		
 			
-			  Extract selected sound (time from 0)
-			  nsound=selected("Sound")
-		      if txtgrd<>0
-				Extract selected TextGrid (time from 0)
-				newsoundgrid = selected("TextGrid")
-			 endif
-		   endeditor
+  Extract selected sound (time from 0)
+  nsound=selected("Sound")
 
-		select woi_file
-		Set string value... 'i' 'annotator$'_shift 'shift$'
-		Set string value... 'i' 'annotator$'_quality 'quality$'
-		Set string value... 'i' 'annotator$'_comments 'comments$'
-		Write to table file... 'woi_file$'
+  if (txtgrd <> 0) or (lab = 1)
+    Extract selected TextGrid (time from 0)
+    newsoundgrid = selected("TextGrid")
+  endif
 
-	if  saveWavAndLabFile
-		if problematic=0
-			select nsound
-			Write to WAV file... truncated/'filename$'
-			
-			if txtgrd = 1
-				select newsoundgrid 
-				Write to text file... truncated/'gridshort$'
-			elsif txtgrd = 2
-				printline yes
-				labshort$ = short$ + ".lab"
-				select newsoundgrid 
-				labtext$ = Get label of interval... 1 1
-    				labtext$ = labtext$ + newline$
-				labtext$ > truncated/'labshort$'
+endeditor
 
-			endif
+select responsesFile
 
-			printline  'filename$'
+if applyQualitytoAllfilesofParticipant = 0	
+	Set string value... 'file' 'annotator$'_tuneBeginning 'tuneBeginning$'
+	Set string value... 'file' 'annotator$'_tuneEnd 'tuneEnd$'
+	Set string value... 'file' 'annotator$'_quality 'quality$'
+	Set string value... 'file' 'annotator$'_comments 'comments$'
+else
+	# check whether there is a column 'participant'. If not, use column 'recordedFile
+	participantColumn = Get column index... "participant"
 
-		else 
-			select nsound
-			Write to WAV file... problematic/'filename$'
-
-			if txtgrd = 1
-				select soundgrid
-				Write to text file... problematic/'gridshort$'
-			elsif txtgrd = 2
-				select newsoundgrid 
-				labtext$ = Get label of interval... 1 1
-    				labtext$ = labtext$ + newline$
-				labtext$ > problematic/'labshort$'
-			endif
-
-			printline  'filename$' was *not* truncated and saved!
+	if participantColumn = 1
+	  for j from 1 to trials
+		rowParticipant$ = Get value... 'j' participant
+        rowFile$ = Get value... 'j' recordedFile
+		if rowParticipant$ = participant$
+			Set string value... 'j' 'annotator$'_quality 'quality$'
+            printline   File will be ignored: 'rowFile$'
 		endif
-	  endif
-	
-       if make_guess
-		select soundintense 
-		Remove
-       endif
+      endfor
+	else
+	  for j from 1 to trials
+        rowFile$ = Get value... 'j' recordedFile
+		call parsename 'rowFile$' "participant"
+		if relevantPart$ = participant$
+			Set string value... 'j' 'annotator$'_quality 'quality$'
+            printline   File will be ignored: 'rowFile$'
+		endif
+      endfor
+    endif 
 
-		select soundfile
-		  Remove
-		  select nsound
-		  Remove
+endif
 
-			if txtgrd = 1
-				select soundgrid 
-				Remove
-				select newsoundgrid 
-				Remove
-			elsif txtgrd = 2
-				select newsoundgrid 
-				Remove
-				select soundgrid 
-				Remove
-			endif
+Write to table file... 'responsesFile$'
+
+if saveLabFile
+  labshort$ = short$ + ".lab"
+  select newsoundgrid 
+  labtext$ = Get label of interval... 1 1
+  labtext$ = labtext$ + newline$
+  labtext$ > truncated/'labshort$'
+endif
+
+if truncateAndSaveSound
+
+  # save truncated sound	
+  select nsound
+  Write to WAV file... truncated/'filename$'
+  printline Saved soundfile 'filename$'
+
+  # save truncated grid if there is one	
+  if txtgrd <> 0
+    select newsoundgrid 
+    if lab = 1
+	  # Remove tier with lab-file content
+      Remove tier... 1
+    endif
+    Write to text file... truncated/'gridshort$'
+    printline Saved TextGrid 'gridshort$'
+  endif
+endif
+
+# If TextGrid generated from Template, save even if not truncating
+if (truncateAndSaveSound) = 0 & txtgrd = 1
+  select newsoundgrid 
+  if lab = 1
+    # Remove tier with lab-file content
+    Remove tier... 1
+  endif
+  Write to text file... truncated/'gridshort$'
+  printline Saved TextGrid 'gridshort$'
+endif
+
+
+if make_guess
+  select soundintense 
+  Remove
+endif
+
+select soundfile
+Remove
+
+select nsound
+Remove
+
+
+if (txtgrd <> 0) or (lab = 1)
+  select soundgrid 
+  Remove
+  select newsoundgrid 
+  Remove
+endif
 
 endif
 endif
-
 
 
 endfor
 
 
-select woi_file
+select presentationOrder
+plus responsesFile
 Remove
 
