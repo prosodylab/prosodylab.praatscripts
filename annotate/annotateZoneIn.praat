@@ -34,49 +34,75 @@ printline
 
 
 form Annotation
-    sentence annotator nameAnnotator
+    comment Annotator name and annotation file:
+    sentence left_annotator nameAnnotator
+    sentence right_responsesFile althutAnnotation.txt
     boolean RandomizePresentationOrder yes
+    #
+    comment Start new annotation, create response file, or add rows?
+	boolean newAnnotation
+	boolean makeDirectory
     boolean CreateNewResponsesFile no
     boolean AddRowsForNewSoundFiles no
-	sentence responsesFile althutAnnotation.txt
-	sentence Extension .wav
+    # Annotation file name:
+	
+    #
+    comment Soundfile location (specify directory if not same) and extension:
 	boolean Soundfile_in_same_directory_as_script no
-	sentence soundDirectory ../recordedFilesWav
+	sentence left_soundDirectory ../recordedFilesWav
+    sentence right_Extension .wav
 	sentence filenameFormat experiment_participant_item_condition
-    comment Start new annotation?
-	boolean newAnnotation 0
-	boolean makeDirectory
-    comment Load TexgGrids, or create new from template?
-	sentence gridDirectory
-    boolean CreateTextGridFromTemplate no
-	sentence templateGrid template.TextGrid
+    comment Load TexgGrids (empty if same), or create new from template (empty if not)?
+	sentence left_gridDirectory
+	sentence right_templateGrid
+    #
     comment Save sound, lab, and Textgrid?
 	boolean truncate yes
     comment Make guess of what part of sound to keep?
     boolean make_guess no
 	natural silenceThreshhold 50
-    comment Zone in to to part of file?
+    #
+    comment Zone in to certain part (specify woiTier and WOI if yes)?
 	optionmenu ZoneIn: 1
 		option No
 		option up to word of interest
 		option as of word of interest
 		option start after word of interest
-    natural woiTier 3
-	integer zoneWOI 1
+    natural left_woiTier 3
+	integer right_zoneWOI 1
     positive marginSize 0.1
-    comment Restrict conditions?
+    comment Restrict to certain conditions, and if yes which?
 	optionmenu conditionRestriction: 1
 		option No
 		option only annotate this condition
 		option don't annotate this condition
     natural restrictCondition 1
-    comment Restrict experiment?
+    comment Restrict to certain experiment?
 	optionmenu experimentRestriction: 3
 		option No
 		option only annotate this experiment
 		option don't annotate this experiment
     sentence restrictExperiment micCheck
 endform
+
+
+# simplify variable names
+#
+extension$ = right_Extension$
+soundDirectory$ = left_soundDirectory$
+woiTier = left_woiTier
+zoneWoi = right_zoneWOI
+templateGrid$ = right_templateGrid$
+gridDirectory$ = left_gridDirectory$
+annotator$ = left_annotator$
+responsesFile$ =  right_responsesFile$
+
+
+createTextGridFromTemplate = 0
+if templateGrid$ <> ""
+  createTextGridFromTemplate = 1
+endif
+
 
 # Store names of the parts of the filename 
 call storeNameParts 'filenameFormat$'
@@ -169,22 +195,27 @@ if createNewResponsesFile
    else
      Create Strings as file list... responsesFile 'soundDirectory$'/*.wav
      fileList = selected("Strings")
-     To Permutation... no
-     length = Get number of elements
-     permutation = selected("Permutation")
-     Permute randomly... 1 'length'
-     randomizedPermutation = selected("Permutation")
-     plus fileList
-     # Uncomment following line to make order or rows random
-     # Permute strings
+     numberSoundFiles = Get number of strings
+     if numberSoundFiles = 0
+       exitScript:"No soundfiles found when trying to create response file"
+     endif
+     #
+     # Uncomment following lines to make order or rows random
+     #To Permutation... no
+     #length = Get number of elements
+     #permutation = selected("Permutation")
+     #Permute randomly... 1 'length'
+     #randomizedPermutation = selected("Permutation")
+     #plus fileList
+     #Permute strings
+     #select permutation
+     #Remove
+     #select randomizedPermutation
+     #Remove
+     #
+     select fileList
      Insert string... 1 recordedFile
      Save as raw text file... 'responsesFile$'
-     Remove
-     select fileList
-     Remove
-     select permutation
-     Remove
-     select randomizedPermutation
      Remove
   endif
 endif
