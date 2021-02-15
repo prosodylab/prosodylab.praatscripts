@@ -10,8 +10,8 @@ echo Write transcription into .lab files for each soundfile in a directory
 # it will then look up columns that contain that information ('id columns', e.g.: experiment_item_condition)
  
 
-form Annotate Words of Interest	
-	sentence fileWithLabColumn ../../wordi.txt
+form Write lab files	
+	sentence fileWithLabColumn ../../mynorca.txt
     comment Either go by whole file name or parse filename and look up id columns:
     boolean parseName yes
     # if not parsing filename, give filename column
@@ -19,7 +19,7 @@ form Annotate Words of Interest
     # if parsing filename, give filename format and specify id columns
 	sentence Id_columns experiment_item_condition
     sentence Filename_format experiment_participant_item_condition
-    choice Case: 2 
+    choice Case: 3 
        button keep same
        button upper case
        button lower case
@@ -237,7 +237,7 @@ for i to numberOfLoops
 	# get correct line and look up lab annotation
 	call getLabel
 
-    printline Filename: 'filename$'
+    printline 'i'/'numberOfLoops': 'filename$'
     printline Transcription: 'labText$'
 
     if labText$<>""
