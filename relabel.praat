@@ -11,7 +11,8 @@ echo Write transcription into .lab files for each soundfile in a directory
  
 
 form Write lab files	
-	sentence fileWithLabColumn ../../mynorca.txt
+	sentence fileWithLabColumn ../../willrep.txt
+    sentence labelColumn plannedProduction
     comment Either go by whole file name or parse filename and look up id columns:
     boolean parseName yes
     # if not parsing filename, give filename column
@@ -158,7 +159,7 @@ procedure getLabel
 		endfor
 		
 		if yessir
-			labText$ = Get value... 'rw' lab
+			labText$ = Get value... 'rw' 'labelColumn$'
 		endif
 
       until  (labText$ <> "") or (rw = nrows)
@@ -170,7 +171,7 @@ procedure getLabel
        rowFileName$ = Get value... 'rw' 'fileNameColumn$'
 
        if filename$ = rowFileName$
-            labText$ = Get value... 'rw' lab
+            labText$ = Get value... 'rw' 'labelColumn$'
        endif
 
      until (labText$ <> "") or (rw = nrows)
@@ -237,8 +238,17 @@ for i to numberOfLoops
 	# get correct line and look up lab annotation
 	call getLabel
 
+   # output labels for dry run
+   if dry_run=1
     printline 'i'/'numberOfLoops': 'filename$'
     printline Transcription: 'labText$'
+   endif
+
+   # output where script is every 50 files
+   if i/50 = round(i/50)
+     printline Labeled 'i'/'numberOfLoops': 'filename$'
+     printline 
+   endif
 
     if labText$<>""
 		len=length(filename$)
@@ -250,11 +260,11 @@ for i to numberOfLoops
 			 labText$ > 'filename$'.lab
 		endif
     else
-      printline No label found!
+      # output files for which no label was found
+      printline Problem with 'i'/'numberOfLoops': 'filename$' --- No label found!
+      printline
 	endif
  
-   printline
-
 endfor
 
 

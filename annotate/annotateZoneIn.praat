@@ -148,6 +148,9 @@ procedure parsename fileName$ namePart$
     partCount = 0
     relevantPart$ = ""
 
+    # avoid _ in "session_id" to be considered a cut-point
+    fileName$  = replace$(fileName$,"SESSION_ID","SESSIONID",0)
+
 	repeat 
 		partCount = partCount + 1
 
@@ -545,6 +548,7 @@ editor 'editorname$' soundname
 		option: "Not Fluent"
 		option: "Not Native"
 		option: "Did not do task"
+		option: "Wrong words"
 		option: "Recording cut off"
 		option: "Recording didn't work"
 		option: "Testrun"
