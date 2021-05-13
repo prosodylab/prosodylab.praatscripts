@@ -237,6 +237,8 @@ if addRowsForNewSoundFiles
 
      numberRows = Get number of rows
 
+     printline number of Soundfiles in folder 'numberOfFiles'
+
 	 # list of soundfiles
      Create Strings as file list... fileList 'soundDirectory$'/*.wav
      fileList = selected("Strings")
@@ -246,7 +248,7 @@ if addRowsForNewSoundFiles
 	 for i from 1 to numberOfFiles
 
         select fileList
-        soundName$ = Get string... 'file'
+        soundName$ = Get string... 'i'
 
         select responseFile
         fileAlreadyThere = Search column... recordedFile 'soundName$'
@@ -265,7 +267,7 @@ if addRowsForNewSoundFiles
      endif
      
      select fileList
-     #Remove
+     Remove
      select responseFile
      #Remove
 
