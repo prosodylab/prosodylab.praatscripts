@@ -11,7 +11,7 @@ echo Write transcription into .lab files for each soundfile in a directory
  
 
 form Write lab files	
-	sentence fileWithLabColumn ../../willrep.txt
+	sentence fileWithLabColumn ../../PhocusW.txt
     sentence labelColumn plannedProduction
     comment Either go by whole file name or parse filename and look up id columns:
     boolean parseName yes
@@ -19,7 +19,7 @@ form Write lab files
     sentence fileNameColumn recordedFile
     # if parsing filename, give filename format and specify id columns
 	sentence Id_columns experiment_item_condition
-    sentence Filename_format experiment_participant_item_condition
+    sentence filenameFormat experiment_participant_item_condition
     choice Case: 3 
        button keep same
        button upper case
@@ -32,21 +32,21 @@ endform
 procedure idColumns columns$
 
 # This procedure saves the id-column-names in an array (column_name'number'))
-# and identifies how many identifying columns there are (numberColumns)
+# and identifies how many identifying columns there are (numberIDColumns)
 
 
-numberColumns = 0
+numberIDColumns = 0
 
 repeat
 
-	numberColumns = numberColumns + 1
+	numberIDColumns = numberIDColumns + 1
 
 	seperator = index (columns$, "_")
 	if seperator = 0
-		column_name'numberColumns'$ = columns$
+		column_name'numberIDColumns'$ = columns$
 		columns$ = ""
 	else
-		column_name'numberColumns'$  = left$(columns$,seperator-1)
+		column_name'numberIDColumns'$  = left$(columns$,seperator-1)
 		len = length(columns$)
 		len = len - seperator
 		columns$ = right$(columns$, len)
@@ -61,14 +61,16 @@ endproc
 
 procedure columnIndex name$
 
-# This procedure identifies where the name 
+# This procedure identifies where in the name 
 # the information corresponding to the id-columns is.
 
+numberNameParts = 0
 
 currentColumn = 0
 
 repeat 
 
+numberNameParts = numberNameParts + 1
 seperator = index (name$, "_")
 
 if seperator = 0
@@ -83,7 +85,7 @@ endif
 
 currentColumn  = currentColumn  + 1
 
-for k to numberColumns
+for k to numberIDColumns
 	if nameColumn$ = column_name'k'$
 		column_index'k' = currentColumn  	
 	endif
@@ -122,7 +124,7 @@ procedure parsename txt$
 			txt$ = right$(txt$, len)
 		endif
 
-		for cl to numberColumns
+		for cl to numberIDColumns
 			if column_index'cl'=columnCount
 				column_value'cl'$ = currentColumn$
 			endif 
@@ -145,24 +147,30 @@ procedure getLabel
     # get relevant information from filename by parsing it based on underscores
     call parsename 'filename$'
 
-    # look up id columns to see which line is the right one
-	repeat
-		rw = rw + 1
 
-		yessir = 1
-		for cl to numberColumns
-			name$ = column_name'cl'$
-			slabel$ = Get value... 'rw' 'name$'
-			if slabel$ <> column_value'cl'$
-			 	yessir = 0
-			endif
-		endfor
+    if columnCount <>  numberNameParts
+       printline File 'filename$' doesn't have specified filename format 
+    else
+
+       # look up id columns to see which line is the right one
+	   repeat
+	    	rw = rw + 1
+
+      		yessir = 1
+      		for cl to numberIDColumns
+      			name$ = column_name'cl'$
+      			slabel$ = Get value... 'rw' 'name$'
+	      		if slabel$ <> column_value'cl'$
+			 	   yessir = 0
+	   		   endif
+		   endfor
 		
-		if yessir
-			labText$ = Get value... 'rw' 'labelColumn$'
-		endif
+		   if yessir
+		      	labText$ = Get value... 'rw' 'labelColumn$'
+		   endif
 
-      until  (labText$ <> "") or (rw = nrows)
+         until  (labText$ <> "") or (rw = nrows)
+      endif 
    else
      # just look up filename in fileNameColumn
 
@@ -215,7 +223,7 @@ labFile = selected("Table")
 nrows = Get number of rows
 
 # 
-call columnIndex  'filename_format$'
+call columnIndex  'filenameFormat$'
 
 # Strings of all sounds files
 Create Strings as file list... list  *.wav
