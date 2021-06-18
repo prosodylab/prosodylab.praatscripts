@@ -16,8 +16,8 @@ form Calculate Results for Production Experiments
 	sentence soundDirectory ../recordedFiles
 	sentence gridDirectory ../recordedFilesTextGrids
 	natural Required_Tiers 3
-    natural phonTier 2
 	natural wordTier 1
+    natural phonTier 2
 	natural woiTier 3
 	#Number of pitch points per interval for average curves
 	natural Number_of_Measure_Points 10
