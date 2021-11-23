@@ -35,8 +35,8 @@ printline
 
 form Annotation
     comment Annotator name and annotation file:
-    sentence left_annotator nameAnnotator
-    sentence right_responsesFile althutAnnotation.txt
+    sentence left_annotator annotationTwo
+    sentence right_responsesFile homphAnnotationTwo.txt
     boolean RandomizePresentationOrder yes
     #
     comment Start new annotation, create response file, or add rows?
@@ -49,27 +49,27 @@ form Annotation
     #
     comment Soundfile location (specify directory if not same) and extension:
 	boolean Soundfile_in_same_directory_as_script no
-	sentence left_soundDirectory ../recordedFilesWav
+	sentence left_soundDirectory ../dataAnnotate/truncated
     sentence right_Extension .wav
 	sentence filenameFormat experiment_participant_item_condition
     comment Load TexgGrids (empty if same), or create new from template (empty if not)?
-	sentence left_gridDirectory
+	sentence left_gridDirectory ../dataTextGrids
 	sentence right_templateGrid
     #
     comment Save sound, lab, and Textgrid?
-	boolean truncate yes
+	boolean truncate no
     comment Make guess of what part of sound to keep?
     boolean make_guess no
 	natural silenceThreshhold 50
     #
     comment Zone in to certain part (specify woiTier and WOI if yes)?
-	optionmenu ZoneIn: 1
+	optionmenu ZoneIn: 4
 		option No
 		option up to word of interest
 		option as of word of interest
 		option start after word of interest
     natural left_woiTier 3
-	integer right_zoneWOI 1
+	integer right_zoneWoi 2
     positive marginSize 0.1
     comment Restrict to certain conditions, and if yes which?
 	optionmenu conditionRestriction: 1
@@ -91,12 +91,11 @@ endform
 extension$ = right_Extension$
 soundDirectory$ = left_soundDirectory$
 woiTier = left_woiTier
-zoneWoi = right_zoneWOI
+zoneWoi = right_zoneWoi
 templateGrid$ = right_templateGrid$
 gridDirectory$ = left_gridDirectory$
 annotator$ = left_annotator$
 responsesFile$ =  right_responsesFile$
-
 
 createTextGridFromTemplate = 0
 if templateGrid$ <> ""
@@ -151,6 +150,7 @@ procedure parsename fileName$ namePart$
     # avoid _ in "session_id" to be considered a cut-point
     fileName$  = replace$(fileName$,"SESSION_ID","SESSIONID",0)
 
+
 	repeat 
 		partCount = partCount + 1
 
@@ -176,7 +176,7 @@ endproc
 
 # If trying to zone in to word of interest, show which one:
 if zoneIn <> 1
-    printline Script tries to zone in to 'zoneIn$': 'zoneWOI'
+    printline Script tries 'zoneIn$': 'zoneWoi'
 endif
 
 if makeDirectory
@@ -237,8 +237,6 @@ if addRowsForNewSoundFiles
 
      numberRows = Get number of rows
 
-     printline number of Soundfiles in folder 'numberOfFiles'
-
 	 # list of soundfiles
      Create Strings as file list... fileList 'soundDirectory$'/*.wav
      fileList = selected("Strings")
@@ -248,7 +246,7 @@ if addRowsForNewSoundFiles
 	 for i from 1 to numberOfFiles
 
         select fileList
-        soundName$ = Get string... 'i'
+        soundName$ = Get string... 'file'
 
         select responseFile
         fileAlreadyThere = Search column... recordedFile 'soundName$'
@@ -267,7 +265,7 @@ if addRowsForNewSoundFiles
      endif
      
      select fileList
-     Remove
+     #Remove
      select responseFile
      #Remove
 
@@ -303,8 +301,8 @@ if newAnnotation
     if alreadyThere = 1
         exitScript: "Column 'annotator$'_quality already exists!"
     else
-		Append column... 'annotator$'_tuneBeginning
-		Append column... 'annotator$'_tuneEnd
+		Append column... 'annotator$'_accentuationFirst
+		Append column... 'annotator$'_accentuationSecond
 		Append column... 'annotator$'_quality
 		Append column... 'annotator$'_comments
     endif
@@ -351,6 +349,8 @@ for i from 1 to trials
   endif
 
   if annotateThisFile = 1
+
+    woiTierThisFile = woiTier
 
     if fileReadable(soundfile$) = 0
       printline 'i'/'trials': File 'filename$' (row: 'file') not readable
@@ -422,7 +422,7 @@ for i from 1 to trials
 	    if txtgrd <> 0
           select soundgrid
           Insert interval tier... 1 'lab'
-          woiTier = woiTier + 1
+          woiTierThisFile = woiTier + 1
         else
           select soundfile  
           To TextGrid... lab
@@ -468,30 +468,30 @@ for i from 1 to trials
       if txtgrd <> 0 and zoneIn$ <> "No"
         select soundgrid
 		nTier = Get number of tiers
-        if nTier >= woiTier
-			ninter = Get number of intervals... 'woiTier'
+        if nTier >= woiTierThisFile
+			ninter = Get number of intervals... 'woiTierThisFile'
 			for j to ninter
-				labint$ = Get label of interval... 'woiTier' j
+				labint$ = Get label of interval... 'woiTierThisFile' j
 			
-				if labint$="'zoneWOI'" or labint$="'zoneWOI' "
+				if labint$="'zoneWoi'" or labint$="'zoneWoi' "
 				    printline Zone in 'zoneIn$': 'labint$'
 
                    if zoneIn$="up to word of interest" 
  
-				    	offsettime= Get end point... 'woiTier' j
+				    	offsettime= Get end point... 'woiTierThisFile' j
 						if (offsettime+marginSize)<totallength
 		              		offsettime=offsettime+marginSize
                       	endif
 
                    elsif zoneIn$="start after word of interest"
 
-				    	onsettime= Get end point... 'woiTier' j
+				    	onsettime= Get end point... 'woiTierThisFile' j
 						if (onsettime+marginSize)<totallength
 		              		onsettime=onsettime+marginSize
                       	endif
 
 					else
-				    	onsettime= Get start point... 'woiTier' j
+				    	onsettime= Get start point... 'woiTierThisFile' j
 		            	if (onsettime-marginSize)>0
 		              		onsettime=onsettime-marginSize
                       	endif
@@ -500,7 +500,7 @@ for i from 1 to trials
               endif
 			endfor
 		else
-			printline "There is no tier 'woiTier' to zone in, there are only 'nTier' tiers"
+			printline "There is no tier 'woiTierThisFile' to zone in, there are only 'nTier' tiers"
         endif
       endif
 
@@ -531,19 +531,17 @@ editor 'editorname$' soundname
   beginPause: "Annotation/Truncation"
 	boolean: "TruncateAndSaveSound" , 'truncate'
 	boolean: "SaveLabFile", 'truncate'
-	choice: "tuneBeginning", 1
+	choice: "firstSentence", 1
+		option: "Not annotated"
+		option: "Neutral Prominence"
+		option: "Prominence shifted (away from last word)"
+        option: "Accent shifted to other word"
 		option: "Unclear"
-		option: "Rise"
-		option: "High-Level"
-		option: "Low-Level"
-		option: "H*"
-		option: "H* L%"
-	choice: "tuneEnd", 1
+	choice: "secondSentence", 1
+		option: "Not annotated"
+		option: "Neutral Prominence"
+		option: "Prominence shifted (away from last word)"
 		option: "Unclear"
-		option: "EarlyFall"
-		option: "LateFall"
-		option: "H*"
-		option: "Deaccented"
 	sentence: "comments", ""
 	optionMenu: "Quality", 1
 		option: "OK"
@@ -582,8 +580,8 @@ endeditor
 select responsesFile
 
 if applyQualitytoAllfilesofParticipant = 0	
-	Set string value... 'file' 'annotator$'_tuneBeginning 'tuneBeginning$'
-	Set string value... 'file' 'annotator$'_tuneEnd 'tuneEnd$'
+	Set string value... 'file' 'annotator$'_accentuationFirst 'firstSentence$'
+	Set string value... 'file' 'annotator$'_accentuationSecond 'secondSentence$'
 	Set string value... 'file' 'annotator$'_quality 'quality$'
 	Set string value... 'file' 'annotator$'_comments 'comments$'
 else

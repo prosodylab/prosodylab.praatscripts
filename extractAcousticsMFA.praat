@@ -329,7 +329,7 @@ appendInfoLine("'filesconsidered' files out of 'n' had measures extracted.")
 appendInfoLine("")
 
 if missinggrids<>0
-	missinggrid$ > GridMissingOrIncomplete.txt	
+	missinggrid$ > GridMissingOrIncomplete.txt
 	appendInfoLine("There were 'missinggrids' files with TextGrids that were either missing or didn't have enough Tiers.")
 	appendInfoLine("")
 	appendInfoLine("See full list in tab-delimited file GridMissingOrIncomplete.txt, and below:")
