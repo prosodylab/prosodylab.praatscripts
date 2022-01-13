@@ -1,6 +1,5 @@
 # Annotate words of interest
-# prosodylab
-# Michael Wagner (chael@mcgill.ca)
+# prosodylab, Michael Wagner, updated 2022
 
 echo Annotate words of interest
 
