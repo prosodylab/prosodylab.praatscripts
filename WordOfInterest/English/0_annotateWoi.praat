@@ -1,11 +1,18 @@
 # Annotate words of interest
-# prosodylab, Michael Wagner, updated 2022
+# Michael Wagner, prosodylab
+
 
 echo Annotate words of interest
 
+# looks up woi annotation in spreadsheet and adds tier with all intervals for each woi
 # for each woi, syllables can be added
 # or vowels (use zone of interest measures for intervals)
 # or stressed vowels (use zone of interest measures for abercrombian foot (sort of) 
+
+
+# the syllabification will only work for English, the syllabification will only work for english, 
+# for a different language, one has to change the list of vowels, 
+# and the list licit onsets toward the beginning of the script
 
 form Annotate Words of Interest	
 	sentence Woi_file ../../phocusW.txt
