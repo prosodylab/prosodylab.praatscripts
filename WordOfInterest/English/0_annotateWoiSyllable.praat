@@ -1,34 +1,83 @@
 # Annotate words of interest
 echo Annotate Words of Interest 
 
-
-# This procedure saves the id-column-names in an array (column_name'number'))
-# and identifies how many identifying columns there are (numberColumns)
-procedure idColumns columns$
-
-
 form Annotate Words of Interest	
 	sentence Woi_file ../../phocusW.txt
 	sentence Id_columns experiment_item_condition
 	sentence Filename_format experiment_participant_item_condition
 	natural wordTierNumber 1
+    natural segmentTier 2
 	boolean Dry_run 1
 	boolean restore_old_before 0
 	boolean mkDir 0
-    boolean showSuccesses 0
+    boolean verbose 0
+    boolean addSyllables 1
+    boolean addIntervals 0
 endform
 
 
+
+##### Prep for syllable annotation
+#
+# vowels and onsets in language:
+#
+vowels$ = "AA-AE-AH-AO-AW-AY-EH-ER-EY-IH-IY-OW-OY-UH-UW"
+onsets$ = "- P - T - K - B - D - G - F - V - TH - DH - S - Z - SH - CH - JH - M - N - R - L - HH - W - Y - P R - T R - K R - B R - D R - G R - F R - TH R - SH R - P L - K L - B L - G L - F L - S L - T W - K W - D W - S W - S P - S T - S K - S F - S M - S N - G W - SH W - S P R - S P L - S T R - S K R - S K W - S K L - TH W - ZH - P Y - K Y - B Y - F Y - HH Y - V Y - TH Y - M Y - S P Y - S K Y - G Y - HH W -"
+
+#### Procedure check whether segment is a vowel
+#
+#
+procedure checkIsVowel segmentLabel$
+	#
+	# remove stress level
+	segmentLabel$ = replace$(segmentLabel$,"0","",0)
+	segmentLabel$ = replace$(segmentLabel$,"1","",0)
+	segmentLabel$ = replace$(segmentLabel$,"2","",0)
+	#
+	segmentLabel$ = "-"+segmentLabel$+"-"
+	isVowel = index(vowels$,segmentLabel$)
+	#
+endproc
+
+
+#### check whether onset is viable onset
+#
+#
+procedure checkIsOnset segmentLabel$
+	#
+	segmentLabel$ = "- "+segmentLabel$+"-"
+	isOnset = index(onsets$,segmentLabel$)
+	#
+endproc
+
+#### shorten transcription by one segment
+procedure shorten toBeShortened$
+    #
+    repeat
+      lastCharacter$ = right$(toBeShortened$,1) 
+      toBeShortened$ = left$(toBeShortened$,length(toBeShortened$)-1)
+    until lastCharacter$ = " " or toBeShortened$ = ""
+    shorter$ = toBeShortened$
+endproc
+
+
+
+
+######
+#
+# This procedure saves the id-column-names in an array (column_name'number'))
+# and identifies how many identifying columns there are (numberColumns)
+#
+procedure idColumns columns$
+#
 if dry_run
-   showSuccesses = 1
+   verbose = 1
 endif
-
+#
 numberColumns = 0
-
+#
 repeat
-
 	numberColumns = numberColumns + 1
-
 	seperator = index (columns$, "_")
 	if seperator = 0
 		column_name'numberColumns'$ = columns$
@@ -39,9 +88,8 @@ repeat
 		len = len - seperator
 		columns$ = right$(columns$, len)
 	endif	
-
 until columns$=""
-
+#
 endproc
 
 
@@ -268,20 +316,36 @@ for i to numberOfLoops
 
 		output$ = output$ + "woi-annotation: 'woiline$'"
 
-        if showSuccesses
+        if verbose
           printline
-          printline 'output$'
+          printline
+          print 'output$'
         endif
 
         gridEnd=Get end time
         
 		# Add new tier to textgrid		
 		select tgrid
-		tier_number = Get number of tiers
-		tier_number = tier_number + 1
+		woiTier = Get number of tiers
+		woiTier = woiTier + 1
 		last_woi_interval = 0
 	
-		Insert interval tier... 'tier_number' woi
+		Insert interval tier... 'woiTier' woi
+
+		# Add syllable tier if necessary
+ 		if addSyllables
+          syllableTier  = woiTier + 1
+          Insert interval tier... 'syllableTier' syllables
+        endif
+
+		# Add interval tier if necessary
+ 		if addIntervals
+          tierNumber = Get number of tiers
+          intervalTier  = tierNumber + 1
+          Insert interval tier... 'intervalTier' syllables
+        endif
+
+
 
 		# Number of intervals on word tier
 		words = Get number of intervals... 'wordTierNumber'
@@ -333,11 +397,11 @@ for i to numberOfLoops
 			endprevious=0
 
 			if last_woi_interval <> 0
-				endprevious = Get end point... 'tier_number' 'last_woi_interval'
+				endprevious = Get end point... 'woiTier' 'last_woi_interval'
 			endif
 			
 			if endprevious <> start
-					Insert boundary... 'tier_number' 'start'
+					Insert boundary... 'woiTier' 'start'
 					last_woi_interval=last_woi_interval+1
 			endif
 			
@@ -348,12 +412,119 @@ for i to numberOfLoops
 				end=end-0.001
 			endif
 
-			Insert boundary... 'tier_number' 'end'
-			Set interval text... 'tier_number' 'last_woi_interval' 'nextLabel$'
+			Insert boundary... 'woiTier' 'end'
+			Set interval text... 'woiTier' 'last_woi_interval' 'nextLabel$'
 
-			if showSuccesses
-              printline 'nextLabel$' 'label$'
+			if verbose
+              printline
+              print 'nextLabel$' 'label$'
             endif
+
+      if addSyllables
+
+			#####
+			# annotate the syllables of current word of interest on syllable tier
+
+		    # add syllable boundary at the beginning of woi
+            #Insert boundary... syllableTier start
+            #currentSyllableInterval = Get interval at time... syllableTier start+0.0001
+
+            # count segments
+            startSegment = Get interval at time... segmentTier start
+            endSegment = Get interval at time... segmentTier end
+            numberSegments = endSegment - startSegment
+
+			# initiate loop variables
+			segmentCounter = 0
+			syllable = 0
+            previousSyllable$ = ""
+            nextSyllable$ = ""
+
+			# loop to syllabify woi
+            repeat
+	
+		       labelCurrentSegment$ = Get label of interval... segmentTier startSegment+segmentCounter
+
+               previousSyllable$ = previousSyllable$ + " " + labelCurrentSegment$
+               
+               call checkIsVowel 'labelCurrentSegment$'
+
+               if isVowel
+
+					call shorten 'previousSyllable$'
+					previousSyllable$  = shorter$
+					thisSyllable$ = labelCurrentSegment$
+
+					onset$ = ""
+					endSyllable = segmentCounter
+
+                  maximizeOnset = 1
+                  while maximizeOnset = 1 
+
+                    if endSyllable = 0
+                       maximizeOnset = 0
+                    else
+                      endSyllable = endSyllable - 1
+                      labelPreviousSegment$ = Get label of interval... segmentTier startSegment+endSyllable 
+
+                     call checkIsVowel 'labelPreviousSegment$'
+
+                     if isVowel = 0
+                        isItOnset$ = labelPreviousSegment$ + " " + onset$
+
+                        call checkIsOnset 'isItOnset$'
+
+                        if isOnset
+                             onset$ = isItOnset$
+                             endsyllable = endSyllable - 1
+
+                  			  call shorten 'previousSyllable$'
+				    	      previousSyllable$ = shorter$
+
+                             thisSyllable$ =  labelPreviousSegment$ + " " + thisSyllable$
+ 						else
+ 						  maximizeOnset = 0
+                         endSyllable = endSyllable + 1
+                        endif
+                      else
+                         maximizeOnset = 0
+						  endSyllable = endSyllable + 1
+                     endif 
+					endif
+                   endwhile
+
+                   # print previous syllable if there was one
+					if previousSyllable$ <> "" & verbose
+					   print   ('previousSyllable$' )-'syllable'
+                    endif
+
+					syllable = syllable + 1
+
+					previousSyllable$ = thisSyllable$
+
+					# place boundary at end of previous syllable (or word beginning)
+					syllableEndTime = Get start time of interval... segmentTier startSegment+endSyllable
+					Insert boundary... syllableTier syllableEndTime
+
+					# add label for current syllable
+                    #
+					currentSyllableInterval = Get interval at time... syllableTier syllableEndTime+0.0001
+                   Set interval text... syllableTier currentSyllableInterval 'syllable'
+		
+
+               endif
+
+               segmentCounter = segmentCounter + 1
+
+             until segmentCounter = numberSegments
+
+			if verbose
+			  print   ( 'previousSyllable$' )-'syllable' 
+           endif
+                      
+			  ## end syllable annotation
+             Insert boundary... syllableTier end
+         endif
 
 	   	endif
 
@@ -385,3 +556,6 @@ Remove
 
 select filenames
 Remove
+
+printline
+printline
