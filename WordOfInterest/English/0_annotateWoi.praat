@@ -1,5 +1,12 @@
 # Annotate words of interest
-echo Annotate Words of Interest 
+# prosodylab
+# Michael Wagner (chael@mcgill.ca)
+
+echo Annotate words of interest
+
+# for each woi, syllables can be added
+# or vowels (use zone of interest measures for intervals)
+# or stressed vowels (use zone of interest measures for abercrombian foot (sort of) 
 
 form Annotate Words of Interest	
 	sentence Woi_file ../../phocusW.txt
@@ -12,7 +19,8 @@ form Annotate Words of Interest
 	boolean mkDir 0
     boolean verbose 0
     boolean addSyllables 1
-    boolean addIntervals 0
+    boolean addVowels 0
+    boolean addStressedVowels 0
 endform
 
 
@@ -21,7 +29,7 @@ endform
 #
 # vowels and onsets in language:
 #
-vowels$ = "AA-AE-AH-AO-AW-AY-EH-ER-EY-IH-IY-OW-OY-UH-UW"
+vowels$ = "-AA-AE-AH-AO-AW-AY-EH-ER-EY-IH-IY-OW-OY-UH-UW-"
 onsets$ = "- P - T - K - B - D - G - F - V - TH - DH - S - Z - SH - CH - JH - M - N - R - L - HH - W - Y - P R - T R - K R - B R - D R - G R - F R - TH R - SH R - P L - K L - B L - G L - F L - S L - T W - K W - D W - S W - S P - S T - S K - S F - S M - S N - G W - SH W - S P R - S P L - S T R - S K R - S K W - S K L - TH W - ZH - P Y - K Y - B Y - F Y - HH Y - V Y - TH Y - M Y - S P Y - S K Y - G Y - HH W -"
 
 #### Procedure check whether segment is a vowel
@@ -254,16 +262,20 @@ until (woiFound = 1) or (len=0)
 
 endproc
 
-
+############
+##
+## prepping
 
 storeold$="0_oldTextGrids"
 
 if restore_old_before = 1
      system mv 'storeold$'/*.TextGrid .
      system rmdir 'storeold$'
+	 mkDir = 1
 endif
 
 call idColumns 'id_columns$'
+
 
 #  Read in woi file
 Read Table from tab-separated file... 'woi_file$'
@@ -292,6 +304,11 @@ endif
 echo Number of files to label: 'numberOfFiles'
 printline
 
+
+
+## start main loop to look for woi
+##
+##
 for i to numberOfLoops
 
     output$ = ""
@@ -338,14 +355,19 @@ for i to numberOfLoops
           Insert interval tier... 'syllableTier' syllables
         endif
 
-		# Add interval tier if necessary
- 		if addIntervals
+		# Add vowel tier if necessary
+ 		if addVowels
           tierNumber = Get number of tiers
-          intervalTier  = tierNumber + 1
-          Insert interval tier... 'intervalTier' syllables
+          vowelTier  = tierNumber + 1
+          Insert interval tier... 'vowelTier' vowels
         endif
 
-
+		# Add stressed vowel tier if necessary
+ 		if addStressedVowels
+          tierNumber = Get number of tiers
+          stressTier  = tierNumber + 1
+          Insert interval tier... 'stressTier' stressedVowels
+        endif
 
 		# Number of intervals on word tier
 		words = Get number of intervals... 'wordTierNumber'
@@ -495,6 +517,9 @@ for i to numberOfLoops
 
                    # print previous syllable if there was one
 					if previousSyllable$ <> "" & verbose
+					    if syllable = 1
+							print   Syllables:
+						endif
 					   print   ('previousSyllable$' )-'syllable'
                     endif
 
@@ -526,6 +551,117 @@ for i to numberOfLoops
              Insert boundary... syllableTier end
          endif
 
+     if addVowels
+
+			#####
+			# annotate the vowels of current word of interest on a separate tier
+
+            # count segments
+            startSegment = Get interval at time... segmentTier start
+            endSegment = Get interval at time... segmentTier end
+            numberSegments = endSegment - startSegment
+
+			# initiate loop variables
+			segmentCounter = 0
+			vowelNumber = 1
+
+			# loop to look for vowels
+            repeat
+	
+		       labelCurrentSegment$ = Get label of interval... segmentTier startSegment+segmentCounter
+               
+               call checkIsVowel 'labelCurrentSegment$'
+
+               if isVowel
+
+					if verbose
+	                   if vowelNumber = 1
+							print   Vowels:
+						endif
+						print  ('labelCurrentSegment$' )-'vowelNumber'
+    				endif
+             
+					# place boundary at beginning of vowel, unless there is one (from previous vowel)
+					vowelStartTime = Get start time of interval... segmentTier startSegment+segmentCounter
+					isEdge = Get interval edge from time... vowelTier vowelStartTime
+					if isEdge = 0
+						Insert boundary... vowelTier vowelStartTime
+					endif
+
+					# place boundary at end of vowel
+					vowelEndTime = Get end time of interval... segmentTier startSegment+segmentCounter
+					Insert boundary... vowelTier vowelEndTime
+
+					# add label for current vowel
+                    #
+					currentVowel = Get interval at time... vowelTier vowelStartTime+0.0001
+                   Set interval text... vowelTier currentVowel 'vowelNumber'
+		
+					vowelNumber = vowelNumber + 1
+
+               endif
+
+               segmentCounter = segmentCounter + 1
+
+             until segmentCounter = numberSegments
+
+                      
+         endif
+
+
+     if addStressedVowels
+
+			#####
+			# annotate the vowel with main stress for each woi and label with woi number
+
+            # count segments
+            startSegment = Get interval at time... segmentTier start
+            endSegment = Get interval at time... segmentTier end
+            numberSegments = endSegment - startSegment
+
+			# initiate loop variables
+			segmentCounter = 0
+
+			# loop to look for vowels
+            repeat
+	
+		       labelCurrentSegment$ = Get label of interval... segmentTier startSegment+segmentCounter
+               
+               call checkIsVowel 'labelCurrentSegment$'
+
+               if isVowel
+
+				 stressMainStress = index(labelCurrentSegment$,"1")
+
+			     if stressMainStress <> 0
+				
+					if verbose
+						print   StressedVowel: 'labelCurrentSegment$'
+    				endif
+
+					# place boundary at beginning of vowel, unless there is one (from previous vowel)
+					vowelStartTime = Get start time of interval... segmentTier startSegment+segmentCounter
+                   Insert boundary... stressTier vowelStartTime
+
+					# place boundary at end of vowel
+					vowelEndTime = Get end time of interval... segmentTier startSegment+segmentCounter
+					Insert boundary... stressTier vowelEndTime
+
+					# add label for current vowel
+                    #
+					currentVowel = Get interval at time... stressTier vowelStartTime+0.0001
+                   Set interval text... stressTier currentVowel 'nextLabel$'
+		          endif
+               endif
+
+               segmentCounter = segmentCounter + 1
+
+             until segmentCounter = numberSegments
+
+                      
+         endif
+
+
 	   	endif
 
 	 	until woiline$=""		
@@ -537,7 +673,7 @@ for i to numberOfLoops
 
         if annotateError <> 1
 		   select tgrid
-		   Remove
+		   #Remove
         endif
 
 	endif
