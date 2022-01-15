@@ -110,7 +110,7 @@ for i to n
         	missinggrids+=1
 		missinggrid$= missinggrid$ + "'missinggrids'" + tab$ + shortname$+".wav" + tab$ + "No enough tiers" + newline$
 	else
-	        filesconsidered = filesconsidered + 1
+	    filesconsidered = filesconsidered + 1
    
 		select mySound
 

@@ -1,18 +1,17 @@
-# Annotate words of interest
+# Annotate intervals of interest
 # Michael Wagner, prosodylab
 
+echo Annotate intervals of interest
 
-echo Annotate words of interest
+# looks up words of interst annotation in spreadsheet
+# adds tier with all intervals for each woi
+# for each woi, subintervals can be added:
+# syllables, vowels, or just the vowel carrying main stress
 
-# looks up woi annotation in spreadsheet and adds tier with all intervals for each woi
-# for each woi, syllables can be added
-# or vowels (use zone of interest measures for intervals)
-# or stressed vowels (use zone of interest measures for abercrombian foot (sort of) 
-
-
-# the syllabification will only work for English, the syllabification will only work for english, 
+# the syllabification algorithm only works for English
 # for a different language, one has to change the list of vowels, 
 # and the list licit onsets toward the beginning of the script
+
 
 form Annotate Words of Interest	
 	sentence Woi_file ../../phocusW.txt
@@ -24,9 +23,15 @@ form Annotate Words of Interest
 	boolean restore_old_before 0
 	boolean mkDir 0
     boolean verbose 0
+	comment Add additional subintervals
     boolean addSyllables 1
     boolean addVowels 0
     boolean addStressedVowels 0
+	comment Adjustments to labels according to language
+	optionmenu Language: 1
+		option English
+		option French
+		option German
 endform
 
 
@@ -198,36 +203,68 @@ procedure getWoiLine
 			woiline$ = Get value... 'rw' woi
 		endif
 
-		woiline$ = replace$ (woiline$, "10", "ten", 0)
-		woiline$ = replace$ (woiline$, ". ", " ", 0)
-		woiline$ = replace$ (woiline$, "10", "ten", 0)
-		woiline$ = replace$ (woiline$, "7", "seven", 0)
-		woiline$ = replace_regex$(woiline$, ".", "\L&", 0)
-		woiline$ = replace$ (woiline$, "’", "'", 0)
-		#woiline$ = replace$ (woiline$, "it's", "it s", 0)
-		woiline$ = replace$ (woiline$, "she's", "she is", 0)
-		woiline$ = replace$ (woiline$, "i've", "i ve", 0)
-		woiline$ = replace$ (woiline$, "i'll", "i ll", 0)
-		woiline$ = replace$ (woiline$, ".", "", 0)
-		woiline$ = replace$ (woiline$, "  ", " ", 0)
-		woiline$ = replace$ (woiline$, ":", "", 0)
-		woiline$ = replace$ (woiline$, "!", " ", 0)
-		#woiline$ = replace$ (woiline$, "—", " ", 0)
-		woiline$ = replace$ (woiline$, "-", " ", 0)
-		woiline$ = replace$ (woiline$, ", ", " ", 0)
-		woiline$ = replace$ (woiline$, ",", "", 0)
-		woiline$ = replace$ (woiline$, """", "", 0)
-		woiline$ = replace$ (woiline$, ";", "", 0)
-		woiline$ = replace$ (woiline$, "  ", " ", 0)
-		woiline$ = replace$ (woiline$, "'S", " S", 0)
-		woiline$ = replace$ (woiline$, "’S", " S", 0)
-		woiline$ = replace$ (woiline$, "  ", " ", 0)
-		woiline$ = replace$ (woiline$, "  ", " ", 0)
-		woiline$ = replace$ (woiline$, "  ", " ", 0)
-		woiline$ = replace$ (woiline$, "  ", " ", 0)
-		woiline$ = replace$ (woiline$, "yo yo", "yo-yo", 0)
-		woiline$ = replace$ (woiline$, "ice cold", "ice-cold", 0)
-		woiline$ = replace$ (woiline$, "five card", "five-card", 0)
+		if language$ = "English"
+			woiline$ = replace$ (woiline$, "10", "ten", 0)
+			woiline$ = replace$ (woiline$, ". ", " ", 0)
+			woiline$ = replace$ (woiline$, "10", "ten", 0)
+			woiline$ = replace$ (woiline$, "7", "seven", 0)
+			woiline$ = replace_regex$(woiline$, ".", "\L&", 0)
+			woiline$ = replace$ (woiline$, "’", "'", 0)
+			woiline$ = replace$ (woiline$, "she's", "she is", 0)
+			woiline$ = replace$ (woiline$, "i've", "i ve", 0)
+			woiline$ = replace$ (woiline$, "i'll", "i ll", 0)
+			woiline$ = replace$ (woiline$, ".", "", 0)
+			woiline$ = replace$ (woiline$, "  ", " ", 0)
+			woiline$ = replace$ (woiline$, ":", "", 0)
+			woiline$ = replace$ (woiline$, "!", " ", 0)
+			woiline$ = replace$ (woiline$, "-", " ", 0)
+			woiline$ = replace$ (woiline$, ", ", " ", 0)
+			woiline$ = replace$ (woiline$, ",", "", 0)
+			woiline$ = replace$ (woiline$, """", "", 0)
+			woiline$ = replace$ (woiline$, ";", "", 0)
+			woiline$ = replace$ (woiline$, "  ", " ", 0)
+			woiline$ = replace$ (woiline$, "'S", " S", 0)
+			woiline$ = replace$ (woiline$, "’S", " S", 0)
+			woiline$ = replace$ (woiline$, "  ", " ", 0)
+			woiline$ = replace$ (woiline$, "  ", " ", 0)
+			woiline$ = replace$ (woiline$, "  ", " ", 0)
+			woiline$ = replace$ (woiline$, "  ", " ", 0)
+		elsif language$ = "French"
+			woiline$ =replace_regex$(woiline$, ".", "\U&", 0)
+			woiline$ = replace$ (woiline$, ".", "", 0)
+			woiline$ = replace$ (woiline$, ":", "", 0)
+			woiline$ = replace$ (woiline$, ",", "", 0)
+			woiline$ = replace$ (woiline$, "j'", "j ", 0)
+			woiline$ = replace$ (woiline$, "t'", "t ", 0)
+			woiline$ = replace$ (woiline$, "s'", "s ", 0)
+			woiline$ = replace$ (woiline$, "c'", "c ", 0)
+			woiline$ = replace$ (woiline$, "d'", "d ", 0)
+			woiline$ = replace$ (woiline$, "l'", "l ", 0)
+			woiline$ = replace$ (woiline$, "n'", "n ", 0)
+			woiline$ = replace$ (woiline$, "qu'", "qu ", 0)
+			woiline$ = replace$ (woiline$, "m'", "m ", 0)
+			woiline$ = replace$ (woiline$, "jusqu'", "jusqu ", 0)
+			woiline$ = replace$ (woiline$, "y'", "y ", 0)
+			woiline$ = replace$ (woiline$, "&", "et", 0)
+			woiline$ = replace$ (woiline$, "'", "", 0)
+			woiline$ = replace$ (woiline$, """", "", 0)
+		elsif language$ = "German"
+			woiline$ =replace_regex$(woiline$, ".", "\L&", 0)
+			woiline$ = replace$ (woiline$, ".", "", 0)
+			woiline$ = replace$ (woiline$, ":", "", 0)
+			woiline$ = replace$ (woiline$, ";", "", 0)
+			woiline$ = replace$ (woiline$, ",", "", 0)
+			woiline$ = replace$ (woiline$, "?", "", 0)
+			woiline$ = replace$ (woiline$, "ü", "ue", 0)
+			woiline$ = replace$ (woiline$, "ö", "oe", 0)
+			woiline$ = replace$ (woiline$, "ä", "ae", 0)
+			woiline$ = replace$ (woiline$, "ß", "ss", 0)
+			woiline$ = replace$ (woiline$, "&", "und", 0)
+			woiline$ = replace$ (woiline$, "'", "", 0)
+			woiline$ = replace$ (woiline$, """, "", 0)
+		endif
+
+
 until  (woiline$ <> "") or (rw = nrows)
 
 endproc
@@ -540,7 +577,7 @@ for i to numberOfLoops
 					# add label for current syllable
                     #
 					currentSyllableInterval = Get interval at time... syllableTier syllableEndTime+0.0001
-                   Set interval text... syllableTier currentSyllableInterval 'syllable'
+                    Set interval text... syllableTier currentSyllableInterval 'nextLabel$'-'syllable'
 		
 
                endif
@@ -601,7 +638,7 @@ for i to numberOfLoops
 					# add label for current vowel
                     #
 					currentVowel = Get interval at time... vowelTier vowelStartTime+0.0001
-                   Set interval text... vowelTier currentVowel 'vowelNumber'
+                   Set interval text... vowelTier currentVowel 'nextLabel$'-'vowelNumber'
 		
 					vowelNumber = vowelNumber + 1
 
@@ -679,7 +716,7 @@ for i to numberOfLoops
 
         if annotateError <> 1
 		   select tgrid
-		   #Remove
+		   Remove
         endif
 
 	endif
