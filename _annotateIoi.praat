@@ -8,9 +8,9 @@ echo Annotate intervals of interest
 # for each woi, subintervals can be added:
 # syllables, vowels, or just the vowel carrying main stress
 
-# the syllabification algorithm only works for English
-# for a different language, one has to change the list of vowels, 
-# and the list licit onsets toward the beginning of the script
+# the syllabification algorithm only works for English so far
+# there's an option how to treat medial sC clusters, which is debatable (cf. Goad 2011)
+# to syllabify other languages, adjust the list of vowels and licit onsets in the language
 
 
 form Annotate Words of Interest	
@@ -24,15 +24,23 @@ form Annotate Words of Interest
 	boolean mkDir 0
     boolean verbose 0
 	comment Add additional subintervals
-    boolean addSyllables 1
     boolean addVowels 0
     boolean addStressedVowels 0
+    boolean addSyllables 1
+	comment Do you want to split medial sC clusters when syllabifying?
+	boolean splitSCClusters 0
 	comment Adjustments to labels according to language
 	optionmenu Language: 1
 		option English
 		option French
 		option German
 endform
+
+
+if addSyllables & language$ <> "English"
+	printline 
+	printline Syllabification not implemented yet for this language
+endif
 
 
 
@@ -112,6 +120,8 @@ until columns$=""
 endproc
 
 
+##########
+#
 # This procedure identifies where the name 
 # the information corresponding to the id-columns is.
 
@@ -150,6 +160,8 @@ endif
 endproc
 
 
+##########
+#
 # This precedure identifies the right textline in the _woi file for a given sound file
 # if there no corresponding line, then an empty string is returned.
 
@@ -181,6 +193,10 @@ procedure parsename txt$
 	until txt$ = ""
 endproc
 
+
+##########
+#
+# get woiLine from spreadsheet
 
 procedure getWoiLine
 
@@ -264,12 +280,13 @@ procedure getWoiLine
 			woiline$ = replace$ (woiline$, """, "", 0)
 		endif
 
-
 until  (woiline$ <> "") or (rw = nrows)
 
 endproc
 
 
+##########
+#
 procedure parseline 
 # this procedure returns the next woi and its label and returns a pruned string
 # nextWoi$ extracted from  textline$, nextLabel$ determined, textline$ is pruned
@@ -309,6 +326,7 @@ endproc
 ##
 ## prepping
 
+
 storeold$="0_oldTextGrids"
 
 if restore_old_before = 1
@@ -344,14 +362,17 @@ else
 		numberOfLoops = numberOfFiles
 endif
 
-echo Number of files to label: 'numberOfFiles'
+printline
+printline Number of files to label: 'numberOfFiles'
 printline
 
 
+##########
+#
+## start main loop to annotate ioi
+##
+##
 
-## start main loop to look for woi
-##
-##
 for i to numberOfLoops
 
     output$ = ""
@@ -454,7 +475,8 @@ for i to numberOfLoops
 				
 		if label$ <> word$ and label$ <> "<unk>"
             annotateError = 1
-			printline "Unmatched word: textgrid: 'label$' woilineword: 'word$' File: 'filename$'
+			printline 
+			print Unmatched word: textgrid: 'label$' woilineword: 'word$' File: 'filename$'
 		elsif woiFound=1
 			start = Get starting point... 'wordTierNumber' 'intCounter'
 			end = Get end point... 'wordTierNumber' 'intCounter'
@@ -532,14 +554,24 @@ for i to numberOfLoops
                       endSyllable = endSyllable - 1
                       labelPreviousSegment$ = Get label of interval... segmentTier startSegment+endSyllable 
 
-                     call checkIsVowel 'labelPreviousSegment$'
+                      call checkIsVowel 'labelPreviousSegment$'
 
-                     if isVowel = 0
-                        isItOnset$ = labelPreviousSegment$ + " " + onset$
+                      if isVowel = 0
 
-                        call checkIsOnset 'isItOnset$'
+						# check whether onset is licit
 
-                        if isOnset
+						isItOnset$ = labelPreviousSegment$ + " " + onset$
+						call checkIsOnset 'isItOnset$'
+						
+						# treat word-medial sC clusters as being split
+						# note that syllable=1 if this is the second syllable
+						if splitSCClusters
+							if onset$ <> "" & syllable = 1 & labelPreviousSegment$ = "S"
+							  isOnset = 0
+							endif
+						endif
+
+                       if isOnset
                              onset$ = isItOnset$
                              endsyllable = endSyllable - 1
 
@@ -586,7 +618,7 @@ for i to numberOfLoops
 
              until segmentCounter = numberSegments
 
-			if verbose
+		   if verbose
 			  print   ( 'previousSyllable$' )-'syllable' 
            endif
                       

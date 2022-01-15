@@ -248,23 +248,23 @@ for i to n
                   maximum = Get maximum... 'wordonset' 'wordoffset' Sinc70
 
 		select Intensity 'dummy$'
-			meanIntensity = Get mean... 'wordonset' 'wordoffset'
-			minIntensity = Get minimum... 'wordonset' 'wordoffset' Parabolic
-			minIntTime = Get time of minimum... 'wordonset' 'wordoffset' Parabolic
-			maxIntensity = Get maximum... 'wordonset' 'wordoffset' Parabolic
-			maxIntTime = Get time of maximum... 'wordonset' 'wordoffset' Parabolic
+		meanIntensity = Get mean... 'wordonset' 'wordoffset'
+		minIntensity = Get minimum... 'wordonset' 'wordoffset' Parabolic
+		minIntTime = Get time of minimum... 'wordonset' 'wordoffset' Parabolic
+		maxIntensity = Get maximum... 'wordonset' 'wordoffset' Parabolic
+		maxIntTime = Get time of maximum... 'wordonset' 'wordoffset' Parabolic
 
-			maxIntTime = (maxIntTime - wordonset) / duration
-			minIntTime = (minIntTime - wordonset) / duration
+		maxIntTime = (maxIntTime - wordonset) / duration
+		minIntTime = (minIntTime - wordonset) / duration
 
-	     	# Get pitch measures
+	     # Get pitch measures
 
-             	select Pitch 'dummy$'
+        select Pitch 'dummy$'
 
 
-                meanpitch = Get mean... 'wordonset' 'wordoffset' Hertz
-               	maxpitch = Get maximum... 'wordonset' 'wordoffset' Hertz Parabolic
-                minpitch = Get minimum... 'wordonset' 'wordoffset' Hertz Parabolic
+        meanpitch = Get mean... 'wordonset' 'wordoffset' Hertz
+        maxpitch = Get maximum... 'wordonset' 'wordoffset' Hertz Parabolic
+        minpitch = Get minimum... 'wordonset' 'wordoffset' Hertz Parabolic
 		maxPitTime = Get time of maximum... 'wordonset' 'wordoffset' Hertz Parabolic
 		minPitTime = Get time of minimum... 'wordonset' 'wordoffset' Hertz Parabolic
 		maxPitTime = (maxPitTime - wordonset) / duration
