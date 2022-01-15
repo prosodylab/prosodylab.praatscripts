@@ -1,7 +1,8 @@
 # Calculate various acoustic variables
 # Michael Wagner. chael@mcgill.ca. July 2009
+# superseded by general extractAcoustics.praat script!
 
-echo SOI Measures
+echo Segment of interest measures
 
 form Calculate Results for Production Experiments
 	sentence Name_Format experiment_participant_item_condition
@@ -12,11 +13,6 @@ form Calculate Results for Production Experiments
 	natural woiTier 3
 	sentence seperator ,
 endform
-
-# This script measures various acoustic variables in our annotated files
-# You have to *select* all sound files that you want to be included before
-# running the script. All soundfiles without corresponding TextGrid files 
-#  in the object list are ignored.
 
 
 ## The following procedure cuts apart the file name at underscores and hyphens
@@ -57,8 +53,6 @@ until remain$ = ""
 # now tab delimited columns from name are in variable return$
 	   
 endproc
-
-
 
 
 
