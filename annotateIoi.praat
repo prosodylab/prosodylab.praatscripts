@@ -15,18 +15,18 @@ echo Annotate intervals of interest
 
 form Annotate Words of Interest	
 	sentence Woi_file ../../phocusW.txt
+	sentence TextGridDirectory ../TextGrids
 	sentence Id_columns experiment_item_condition
 	sentence Filename_format experiment_participant_item_condition
 	natural wordTierNumber 1
     natural segmentTier 2
 	boolean Dry_run 1
 	boolean restore_old_before 0
-	boolean mkDir 0
     boolean verbose 0
 	comment Add additional subintervals
-    boolean addVowels 0
+    boolean addVowels 1
     boolean addStressedVowels 0
-    boolean addSyllables 1
+    boolean addSyllables 0
 	comment Do you want to split medial sC clusters when syllabifying?
 	boolean splitSCClusters 0
 	comment Adjustments to labels according to language
@@ -322,38 +322,57 @@ until (woiFound = 1) or (len=0)
 
 endproc
 
+
+
 ############
 ##
 ## prepping
 
 
-storeold$="0_oldTextGrids"
-
-if restore_old_before = 1
-     system mv 'storeold$'/*.TextGrid .
-     system rmdir 'storeold$'
-	 mkDir = 1
+# if TextGrids not in same directory, add forward slash to directory name
+if textGridDirectory$ <> ""
+	textGridDirectory$ = textGridDirectory$ + "/"
 endif
 
+
+# Set up folder where old TextGrids will be saved
+# Restore old TextGrids if requested
+
+if dry_run = 0
+
+	storeold$="0_oldTextGrids"
+
+	if restore_old_before = 1
+		system mv 'textGridDirectory$''storeold$'/*.TextGrid 'textGridDirectory$'
+		system rmdir 'textGridDirectory$''storeold$'
+	endif
+
+
+ 	# make directory where old textGrid files will be saved
+    # will return error if it already exists
+
+ 	system mkdir 'textGridDirectory$''storeold$'
+
+endif 
+
+
+# parse column names used to identify rows in the spreadsheet
 call idColumns 'id_columns$'
+
+# determine where in filename this information will be, given specified filename format
+call columnIndex  'filename_format$'
 
 
 #  Read in woi file
-Read Table from tab-separated file... 'woi_file$'
+Read Table from tab-separated file... 'textGridDirectory$''woi_file$'
 woi_file = selected("Table")
 
-# 
-call columnIndex  'filename_format$'
 
 # Strings of all sounds files
-Create Strings as file list... list  *.TextGrid
+Create Strings as file list... list   'textGridDirectory$'*.TextGrid
 filenames = selected("Strings")
 numberOfFiles = Get number of strings
 
-if dry_run=0 and mkDir=1
- 	# make directory for old textGrid files
- 	system mkdir  'storeold$'
-endif 
 
 # Cycle through soundfiles
 if  dry_run=1
@@ -386,13 +405,13 @@ for i to numberOfLoops
 	call getWoiLine
 
         if woiline$<>""
-		Read from file... 'filename$'
+		Read from file... 'textGridDirectory$''filename$'
 		output$ = output$ + "'i': 'filename$'" + newline$
 		tgrid = selected("TextGrid")
 
 		# save original tgrid	
 		if dry_run<>1
-			Write to text file... 'storeold$'/'filename$'
+			Write to text file... 'textGridDirectory$''storeold$'/'filename$'
 		endif
 
 		output$ = output$ + "woi-annotation: 'woiline$'"
@@ -653,7 +672,7 @@ for i to numberOfLoops
 	                   if vowelNumber = 1
 							print   Vowels:
 						endif
-						print  ('labelCurrentSegment$' )-'vowelNumber'
+						print  ('labelCurrentSegment$' )_'nextLabel$'-'vowelNumber'
     				endif
              
 					# place boundary at beginning of vowel, unless there is one (from previous vowel)
@@ -743,7 +762,7 @@ for i to numberOfLoops
 
 		select tgrid
 		if dry_run<>1
-			Write to text file... 'filename$'
+			Write to text file... 'textGridDirectory$''filename$'
 		endif
 
         if annotateError <> 1
@@ -756,7 +775,6 @@ for i to numberOfLoops
    if i/50 = round(i/50)
       printline
       printline Labeled 'i'/'numberOfLoops'
-      printline 
    endif
 
 endfor
