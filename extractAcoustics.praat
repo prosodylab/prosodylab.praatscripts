@@ -5,7 +5,7 @@
 
 Text writing preferences: "UTF-8"
 
-echo Extract Acoustic Measures for words and zones of interest
+echo Extract Acoustic Measures for intervals and zones of interest
 
 # This script measures various acoustic variables in our annotated files
 # All soundfiles without corresponding TextGrid files in the folder are ignored, as well as TextGrids that don't have a sufficient number of tiers
@@ -27,7 +27,7 @@ form Calculate Results for Production Experiments
 	natural wordTier 1
     natural phonTier 2
 	comment Tier with intervals of interest (0 if none)
-	natural ioiTier 5
+	natural ioiTier 4
 	comment Measures for zones as well?
     boolean zones 1
 	comment Measure all words, so one can plot entire utterance?
@@ -84,7 +84,9 @@ seperator$ = tab$
 # When formants are measures, multiple measures must be taken in general
 if formants
 	multiple = 1
-	printline 'multiple' set to true, since formant measures were requested
+	printline
+	printline  Parameter multiple set to true, since formant measures were requested
+	printline
 endif
 
 required_Tiers = ioiTier
@@ -528,21 +530,34 @@ for i to n
       select myPitch
 	  plus myIntensity
 	  Remove
-        endif 
+
+	  if formants
+	  	select myMaleFormants
+	  	plus myFemaleFormants
+	  	Remove
+	  endif
+
+	  if ioiLabel$ == "1"
+		printline ioi 'ioiLabel$': 'fileName$'
+	  endif
+
+  endif 
  
   select myGrid
   plus mySound
   Remove
   endif
+
   
-  if i=10*round((i/10))	
- 	writeInfoLine ("Processed sound 'i' of 'n'. So far, 'filesconsidered' files had measures extracted.")
+  if i=25*round((i/25))	
+ 	appendInfoLine ("Processed sound 'i' of 'n'. So far, 'filesconsidered' files had measures extracted.")
   endif
 
 endfor  
  
-
-writeInfoLine("Done!")
+printline
+printline
+appendInfo("Done!")
 appendInfoLine("")
 appendInfoLine("Output was written to tab-delimited file 'output_Filename$'.txt.")
 appendInfoLine("")
