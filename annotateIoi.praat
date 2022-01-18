@@ -517,7 +517,7 @@ for i to numberOfLoops
 				output$ = output$ + newline$
 			endif
 
-			errors$ = errors$ + "  Unmatched textgrid word: 'label$' woilineword: 'word$'" + newline$
+			errors$ = errors$ + "  Textgrid word: 'label$' was matched with woilineword: 'word$'" + newline$
 		  elsif woiFound=1
 
 			start = Get starting point... 'wordTierNumber' 'intCounter'
