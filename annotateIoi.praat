@@ -14,7 +14,7 @@ echo Annotate intervals of interest
 
 
 form Annotate Words of Interest	
-	sentence Woi_file ../../phocusW.txt
+	sentence Woi_file ../../phocus2.txt
 	sentence TextGridDirectory ../TextGrids
 	sentence Id_columns experiment_item_condition
 	sentence Filename_format experiment_participant_item_condition
@@ -25,23 +25,30 @@ form Annotate Words of Interest
     boolean verbose 0
 	comment Add additional subintervals
     boolean addVowels 1
-    boolean addStressedVowels 0
+    boolean addStressedVowels 1
     boolean addSyllables 0
 	comment Do you want to split medial sC clusters when syllabifying?
-	boolean splitSCClusters 0
+	boolean splitSCClusters 1
 	comment Adjustments to labels according to language
 	optionmenu Language: 1
 		option English
 		option French
 		option German
+	boolean OpenProblematicSoundfiles 1
+	sentence soundDirectory ../recordedFilesAnnotate/truncated
+	sentence soundExtension .wav
 endform
 
+
+
+### initialize variable log file
+
+log$ = "Annotate intervals of interest. Log from " + date$() + newline$ + newline$
 
 if addSyllables & language$ <> "English"
 	printline 
 	printline Syllabification not implemented yet for this language
 endif
-
 
 
 ##### Prep for syllable annotation
@@ -50,6 +57,10 @@ endif
 #
 vowels$ = "-AA-AE-AH-AO-AW-AY-EH-ER-EY-IH-IY-OW-OY-UH-UW-"
 onsets$ = "- P - T - K - B - D - G - F - V - TH - DH - S - Z - SH - CH - JH - M - N - R - L - HH - W - Y - P R - T R - K R - B R - D R - G R - F R - TH R - SH R - P L - K L - B L - G L - F L - S L - T W - K W - D W - S W - S P - S T - S K - S F - S M - S N - G W - SH W - S P R - S P L - S T R - S K R - S K W - S K L - TH W - ZH - P Y - K Y - B Y - F Y - HH Y - V Y - TH Y - M Y - S P Y - S K Y - G Y - HH W -"
+
+
+
+
 
 #### Procedure check whether segment is a vowel
 #
@@ -326,12 +337,16 @@ endproc
 
 ############
 ##
-## prepping
+## Main script: prepping
 
 
 # if TextGrids not in same directory, add forward slash to directory name
 if textGridDirectory$ <> ""
 	textGridDirectory$ = textGridDirectory$ + "/"
+endif
+
+if soundDirectory$ <> ""
+	soundDirectory$  = soundDirectory$  + "/"
 endif
 
 
@@ -394,7 +409,10 @@ printline
 
 for i to numberOfLoops
 
+	# Set variables for verbose output
+	textGridWords$ = ""
     output$ = ""
+	errors$ = ""
     annotateError = 0
 
 	select filenames
@@ -404,23 +422,18 @@ for i to numberOfLoops
 	call parsename 'filename$'
 	call getWoiLine
 
-        if woiline$<>""
+
+    if woiline$<>""
 		Read from file... 'textGridDirectory$''filename$'
-		output$ = output$ + "'i': 'filename$'" + newline$
 		tgrid = selected("TextGrid")
+
+		# add woiline to output$ for log and verbose output
+		output$ = output$ + "woi-annotation: 'woiline$'" + newline$
 
 		# save original tgrid	
 		if dry_run<>1
 			Write to text file... 'textGridDirectory$''storeold$'/'filename$'
 		endif
-
-		output$ = output$ + "woi-annotation: 'woiline$'"
-
-        if verbose
-          printline
-          printline
-          print 'output$'
-        endif
 
         gridEnd=Get end time
         
@@ -456,47 +469,57 @@ for i to numberOfLoops
 		words = Get number of intervals... 'wordTierNumber'
 		intCounter = 0
 
+		# loop through all woi files and try to match them up with words in TextGrid
 	    repeat
 
-		woiFound = 0
+		  woiFound = 0
 
-		repeat
+		  # loop through to next interval on wordTier that is not empty and label with next word in woi annotation
+		  repeat 
 			intCounter=intCounter+1
 			if intCounter <= words
     			label$ = Get label of interval... 'wordTierNumber' 'intCounter'
 			endif
-		until (label$<>"sil" and label$<>"sp" and label$<>"") or intCounter > words
+		  until (label$<>"sil" and label$<>"sp" and label$<>"") or intCounter > words
+
+		  textGridWords$ = textGridWords$ + "'label$' "
 
 
-		# Get next word in woiline and truncate
-		#
-	        space = index(woiline$, " ")
-	   	if space = 0
+		  # Get next word in woiline and truncate spaces
+		  #
+	      space = index(woiline$, " ")
+	      if space = 0
 			word$ = woiline$
 			space = length(woiline$)
-		else 
+		  else 
 			space=space-1
-		endif	
-		word$ = left$(woiline$, space)
-		len = length(woiline$)
-		len = len - space
-		woiline$ = right$(woiline$,len-1)
-		len = length(woiline$)
-	
-		uscore = index(word$, "_")
+		  endif	
 
-		if uscore <> 0
+		  word$ = left$(woiline$, space)
+		  len = length(woiline$)
+		  len = len - space
+		  woiline$ = right$(woiline$,len-1)
+		  len = length(woiline$)
+	
+		  uscore = index(word$, "_")
+
+		  if uscore <> 0
 			woiFound = 1
 			leng = space  - uscore
 			nextLabel$ = right$(word$, leng)
 			word$ = left$(word$, (uscore-1))
-		endif 	
+		  endif 	
 				
-		if label$ <> word$ and label$ <> "<unk>"
-            annotateError = 1
-			printline 
-			print Unmatched word: textgrid: 'label$' woilineword: 'word$' File: 'filename$'
-		elsif woiFound=1
+		  if label$ <> word$ and label$ <> "<unk>"
+
+			if annotateError = 0
+				annotateError = 1
+				output$ = output$ + newline$
+			endif
+
+			errors$ = errors$ + "  Unmatched textgrid word: 'label$' woilineword: 'word$'" + newline$
+		  elsif woiFound=1
+
 			start = Get starting point... 'wordTierNumber' 'intCounter'
 			end = Get end point... 'wordTierNumber' 'intCounter'
 
@@ -521,12 +544,10 @@ for i to numberOfLoops
 			Insert boundary... 'woiTier' 'end'
 			Set interval text... 'woiTier' 'last_woi_interval' 'nextLabel$'
 
-			if verbose
-              printline
-              print 'nextLabel$' 'label$'
-            endif
+			output$ = output$ + newline$ + "  'nextLabel$' 'label$'"
 
-      if addSyllables
+
+		  if addSyllables
 
 			#####
 			# annotate the syllables of current word of interest on syllable tier
@@ -555,17 +576,17 @@ for i to numberOfLoops
                
                call checkIsVowel 'labelCurrentSegment$'
 
-               if isVowel
+		       if isVowel
 
-					call shorten 'previousSyllable$'
+		       		call shorten 'previousSyllable$'
 					previousSyllable$  = shorter$
 					thisSyllable$ = labelCurrentSegment$
 
+		       		maximizeOnset = 1
 					onset$ = ""
 					endSyllable = segmentCounter
 
-                  maximizeOnset = 1
-                  while maximizeOnset = 1 
+		       		while maximizeOnset = 1 
 
                     if endSyllable = 0
                        maximizeOnset = 0
@@ -610,11 +631,11 @@ for i to numberOfLoops
                    endwhile
 
                    # print previous syllable if there was one
-					if previousSyllable$ <> "" & verbose
+                   if previousSyllable$ <> ""
 					    if syllable = 1
-							print   Syllables:
+							output$ = output$ + "  Syllables:"
 						endif
-					   print   ('previousSyllable$' )-'syllable'
+					    output$ = output$ + " ('previousSyllable$' )-'syllable'"
                     endif
 
 					syllable = syllable + 1
@@ -626,26 +647,24 @@ for i to numberOfLoops
 					Insert boundary... syllableTier syllableEndTime
 
 					# add label for current syllable
-                    #
+					#
 					currentSyllableInterval = Get interval at time... syllableTier syllableEndTime+0.0001
-                    Set interval text... syllableTier currentSyllableInterval 'nextLabel$'-'syllable'
+					Set interval text... syllableTier currentSyllableInterval 'nextLabel$'-'syllable'
 		
-
                endif
 
                segmentCounter = segmentCounter + 1
 
              until segmentCounter = numberSegments
 
-		   if verbose
-			  print   ( 'previousSyllable$' )-'syllable' 
-           endif
+		     output$ = output$ + "( 'previousSyllable$' )-'syllable'"
                       
-			  ## end syllable annotation
-             Insert boundary... syllableTier end
-         endif
+		     ## set end of final syllable
+		     Insert boundary... syllableTier end
 
-     if addVowels
+		  endif
+
+		  if addVowels
 
 			#####
 			# annotate the vowels of current word of interest on a separate tier
@@ -668,13 +687,13 @@ for i to numberOfLoops
 
                if isVowel
 
-					if verbose
-	                   if vowelNumber = 1
-							print   Vowels:
-						endif
-						print  ('labelCurrentSegment$' )_'nextLabel$'-'vowelNumber'
-    				endif
-             
+					# add to output
+					if vowelNumber = 1
+						output$ = output$ + "  Vowels:"
+					endif
+					output$ = output$ + " ('labelCurrentSegment$' )_'nextLabel$'-'vowelNumber'"
+
+    				             
 					# place boundary at beginning of vowel, unless there is one (from previous vowel)
 					vowelStartTime = Get start time of interval... segmentTier startSegment+segmentCounter
 					isEdge = Get interval edge from time... vowelTier vowelStartTime
@@ -698,12 +717,11 @@ for i to numberOfLoops
                segmentCounter = segmentCounter + 1
 
              until segmentCounter = numberSegments
+            
+		  endif
 
-                      
-         endif
 
-
-     if addStressedVowels
+		  if addStressedVowels
 
 			#####
 			# annotate the vowel with main stress for each woi and label with woi number
@@ -729,9 +747,7 @@ for i to numberOfLoops
 
 			     if stressMainStress <> 0
 				
-					if verbose
-						print   StressedVowel: 'labelCurrentSegment$'
-    				endif
+					output$ = output$ + "  StressedVowel: 'labelCurrentSegment$'"
 
 					# place boundary at beginning of vowel, unless there is one (from previous vowel)
 					vowelStartTime = Get start time of interval... segmentTier startSegment+segmentCounter
@@ -751,12 +767,10 @@ for i to numberOfLoops
                segmentCounter = segmentCounter + 1
 
              until segmentCounter = numberSegments
-
                       
-         endif
+		  endif
 
-
-	   	endif
+		endif
 
 	 	until woiline$=""		
 
@@ -765,17 +779,47 @@ for i to numberOfLoops
 			Write to text file... 'textGridDirectory$''filename$'
 		endif
 
-        if annotateError <> 1
+		# Leave TextGrids open that had a problem
+        if annotateError = 0
 		   select tgrid
 		   Remove
         endif
 
 	endif
 
-   if i/50 = round(i/50)
+
+	# Write file number and textgrid name to output
+
+	output$ = "'i': 'filename$'" + newline$ + "TextGridWords: " + textGridWords$ + newline$  + output$
+
+	if annotateError <> 0
+		output$ = output$ + newline$ + errors$
+
+		# open problematic soundfile
+		if openProblematicSoundfiles
+			seperator = index (filename$,".")
+			shortName$ = left$(filename$,seperator-1)
+			output$ = output$ + newline$ + " Soundfilename: 'soundDirectory$''shortName$''soundExtension$'"
+			Read from file... 'soundDirectory$''shortName$''soundExtension$'
+		endif
+    endif
+
+	endif
+
+	output$ = output$ + newline$ + newline$
+	# out to info window if verbose output requested
+    if verbose
+          printline
+          printline 'output$'
+    endif
+
+	# add output to log file
+	log$ = log$ + newline$ + output$
+
+    if i/50 = round(i/50)
       printline
       printline Labeled 'i'/'numberOfLoops'
-   endif
+    endif
 
 endfor
 
@@ -785,6 +829,10 @@ Remove
 
 select filenames
 Remove
+
+#if !dry_run
+   log$ > annotateIoi_log.txt
+#endif
 
 printline
 printline
