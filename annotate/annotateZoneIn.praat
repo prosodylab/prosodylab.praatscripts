@@ -22,7 +22,6 @@ Text writing preferences: "UTF-8"
 # Whatever is selected when you hit 'continue' is what the soundfile will be truncated to
 # The lab text or textgrid will also be saved
 #
-# If directories truncated/ and untruncated/ don't exist yet, click on 'make directories'
 # The script automatically also truncates the textgrid file if there is one, 
 # and it copies the label (.lab) file into both folders (if there is one)
 #
@@ -32,45 +31,56 @@ Text writing preferences: "UTF-8"
 echo Annotation Script
 printline
 
+# additional parameters that are not set in the form below
+
+    # If truncating, make guess of what part of sound to keep and highlight it?
+    make_guess = 1
+	# silence threshold for detecting soundfile 
+	silenceThreshhold = 50
+
+	# if directory for truncation does not yet exist, create it?
+    makeDirectory = 1
+
+    # if zoning in to woi, how much margin should be left?
+    marginSize = 0.1
 
 form Annotation
     comment Annotator name and annotation file:
-    sentence left_annotator annotationTwo
-    sentence right_responsesFile homphAnnotationTwo.txt
+    sentence left_annotator sabrina
+    sentence right_responsesFile phocusTwoSabrina.txt
     boolean RandomizePresentationOrder yes
+
     #
-    comment Start new annotation, create response file, or add rows?
-	boolean newAnnotation
-	boolean makeDirectory
+	comment Start new annotation, create response file, or add rows?
     boolean CreateNewResponsesFile no
+	boolean newAnnotation
     boolean AddRowsForNewSoundFiles no
+
     # Annotation file name:
-	
-    #
-    comment Soundfile location (specify directory if not same) and extension:
-	boolean Soundfile_in_same_directory_as_script no
-	sentence left_soundDirectory ../dataAnnotate/truncated
+    comment Soundfile location (leave empty if same directory) and extension:
+	sentence left_soundDirectory ../dataSoundTruncated
     sentence right_Extension .wav
 	sentence filenameFormat experiment_participant_item_condition
-    comment Load TexgGrids (empty if same), or create new from template (empty if not)?
+
+	# TextGrid location
+    comment Load TexgGrids (empty if same directory), or create new from template (empty if not)?
 	sentence left_gridDirectory ../dataTextGrids
 	sentence right_templateGrid
     #
     comment Save sound, lab, and Textgrid?
 	boolean truncate no
-    comment Make guess of what part of sound to keep?
-    boolean make_guess no
-	natural silenceThreshhold 50
+	sentence directoryTruncatedFiles ../dataSoundTruncated
+
     #
     comment Zone in to certain part (specify woiTier and WOI if yes)?
-	optionmenu ZoneIn: 4
+	optionmenu ZoneIn: 1
 		option No
 		option up to word of interest
 		option as of word of interest
 		option start after word of interest
     natural left_woiTier 3
-	integer right_zoneWoi 2
-    positive marginSize 0.1
+	integer right_zoneWoi 1
+
     comment Restrict to certain conditions, and if yes which?
 	optionmenu conditionRestriction: 1
 		option No
@@ -78,11 +88,11 @@ form Annotation
 		option don't annotate this condition
     natural restrictCondition 1
     comment Restrict to certain experiment?
-	optionmenu experimentRestriction: 3
+	optionmenu experimentRestriction: 2
 		option No
 		option only annotate this experiment
 		option don't annotate this experiment
-    sentence restrictExperiment micCheck
+    sentence restrictExperiment phocusTwo
 endform
 
 
@@ -96,6 +106,18 @@ templateGrid$ = right_templateGrid$
 gridDirectory$ = left_gridDirectory$
 annotator$ = left_annotator$
 responsesFile$ =  right_responsesFile$
+
+if soundDirectory$ = ""
+	soundfile_in_same_directory_as_script = 1
+else
+    soundfile_in_same_directory_as_script = 0
+endif
+
+# create folder for truncated files if it doesn't already exist
+if truncate
+  createFolder: directoryTruncatedFiles$
+endif 
+
 
 createTextGridFromTemplate = 0
 if templateGrid$ <> ""
@@ -179,9 +201,7 @@ if zoneIn <> 1
     printline Script tries 'zoneIn$': 'zoneWoi'
 endif
 
-if makeDirectory
-  system mkdir truncated
-endif 
+
 
 if soundfile_in_same_directory_as_script
   directory_sound$ = ""
@@ -246,7 +266,7 @@ if addRowsForNewSoundFiles
 	 for i from 1 to numberOfFiles
 
         select fileList
-        soundName$ = Get string... 'file'
+        soundName$ = Get string... 'i'
 
         select responseFile
         fileAlreadyThere = Search column... recordedFile 'soundName$'
@@ -405,13 +425,13 @@ for i from 1 to trials
         soundgrid = selected("TextGrid")
       endif
 
-      # Read lab file if there is one
+      # Read lab file if there is one, but only if zoneIn is 1, since otherwise full text should not be visible
 
       lab$ = soundDirectory$ + "/" + short$+".lab"
       labshort$ = short$ + ".lab"
       lab = 0
 
-      if fileReadable(lab$)
+      if fileReadable(lab$) & zoneIn = 1
         lab = 1
         Read Strings from raw text file... 'lab$'
 		labelfile = selected("Strings")
@@ -508,22 +528,21 @@ for i from 1 to trials
       # Annotate and truncate
 
       # Anonymize filenames so condition is not apparent
-
-      select soundgrid 
+      select soundgrid
       Rename... soundname
 
       select soundfile
       Rename... soundname
       editorname$ = "Sound"
 
-      if (txtgrd <> 0) or (lab <> 0)
+     if (txtgrd <> 0) or (lab <> 0)
       	plus soundgrid
       	editorname$ = "TextGrid"
       endif
 
 Edit
 editor 'editorname$' soundname
-  Select... onsettime offsettime	
+  Select... onsettime offsettime
   if zoneIn$ <> "No"
 	Zoom to selection
   endif
@@ -533,14 +552,15 @@ editor 'editorname$' soundname
 	boolean: "SaveLabFile", 'truncate'
 	choice: "firstSentence", 1
 		option: "Not annotated"
-		option: "Neutral Prominence"
-		option: "Prominence shifted (away from last word)"
+		option: "Default Accent"
+		option: "Accent shifted within word"
         option: "Accent shifted to other word"
 		option: "Unclear"
 	choice: "secondSentence", 1
 		option: "Not annotated"
-		option: "Neutral Prominence"
-		option: "Prominence shifted (away from last word)"
+		option: "Default Accent"
+		option: "Accent shifted within word"
+        option: "Accent shifted to other word"
 		option: "Unclear"
 	sentence: "comments", ""
 	optionMenu: "Quality", 1
@@ -548,7 +568,7 @@ editor 'editorname$' soundname
 		option: "Not Fluent"
 		option: "Not Native"
 		option: "Did not do task"
-		option: "Wrong words"
+		option: "Used different words"
 		option: "Recording cut off"
 		option: "Recording didn't work"
 		option: "Testrun"
@@ -617,14 +637,14 @@ if saveLabFile
   select newsoundgrid 
   labtext$ = Get label of interval... 1 1
   labtext$ = labtext$ + newline$
-  labtext$ > truncated/'labshort$'
+  labtext$ > 'directoryTruncatedFiles$'/'labshort$'
 endif
 
 if truncateAndSaveSound
 
   # save truncated sound	
   select nsound
-  Write to WAV file... truncated/'filename$'
+  Write to WAV file... 'directoryTruncatedFiles$'/'filename$'
   printline Saved soundfile 'filename$'
 
   # save truncated grid if there is one	
@@ -634,7 +654,7 @@ if truncateAndSaveSound
 	  # Remove tier with lab-file content
       Remove tier... 1
     endif
-    Write to text file... truncated/'gridshort$'
+    Write to text file... 'directoryTruncatedFiles$'/'gridshort$'
     printline Saved TextGrid 'gridshort$'
   endif
 endif
@@ -646,7 +666,7 @@ if (truncateAndSaveSound) = 0 & txtgrd = 1
     # Remove tier with lab-file content
     Remove tier... 1
   endif
-  Write to text file... truncated/'gridshort$'
+  Write to text file... 'directoryTruncatedFiles$'/'gridshort$'
   printline Saved TextGrid 'gridshort$'
 endif
 

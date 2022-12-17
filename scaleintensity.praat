@@ -87,8 +87,8 @@ for ifile to numberFiles
      grid$ = replace$(filename$,extension$,".TextGrid",0)
      
      if fileReadable (grid$)
-          Read from file... "'textGridDirectory$''grid$'"
-          Write to text file...  "'targetDirectory$''grid$'"
+          Read from file... 'textGridDirectory$''grid$'
+          Write to text file... 'targetDirectory$''grid$'
           Remove
      else
            printline 'filename$': No Textgrid file

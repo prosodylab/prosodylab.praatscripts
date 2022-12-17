@@ -19,15 +19,15 @@ echo Extract Acoustic Measures for intervals and zones of interest
 
 form Calculate Results for Production Experiments
 	sentence Name_Format experiment_participant_item_condition
-	sentence Output_Filename phocusWAcousticsStressed
+	sentence Output_Filename phocus2AcousticsStressedVowels
 	sentence extension .wav
 	comment Specify directory -- otherwise selected soundfiles will be annotated
-	sentence soundDirectory ../recordedFilesAnnotate/truncated_relabeled
+	sentence soundDirectory ../recordedFilesAnnotate/truncated
 	sentence gridDirectory ../TextGrids
 	natural wordTier 1
     natural phonTier 2
 	comment Tier with intervals of interest (0 if none)
-	natural ioiTier 4
+	natural ioiTier 5
 	comment Measures for zones as well?
     boolean zones 1
 	comment Measure all words, so one can plot entire utterance?
@@ -565,7 +565,7 @@ appendInfoLine("'filesconsidered' files out of 'n' had measures extracted.")
 appendInfoLine("")
 
 if missinggrids<>0
-	missinggrid$ > GridMissingOrIncomplete.txt
+	missinggrid$ > extractAcoustics_missingOrIncompleteGrids_log.txt
 	appendInfoLine("There were 'missinggrids' files with TextGrids that were either missing or didn't have enough Tiers.")
 	appendInfoLine("")
 	appendInfoLine("See full list in tab-delimited file GridMissingOrIncomplete.txt, and below:")

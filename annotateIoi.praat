@@ -14,8 +14,8 @@ echo Annotate intervals of interest
 
 
 form Annotate Words of Interest	
-	sentence Woi_file ../../phocus2.txt
-	sentence TextGridDirectory ../TextGrids
+	sentence Woi_file ../phocusTwo.tsv
+	sentence TextGridDirectory ../dataTextGrids
 	sentence Id_columns experiment_item_condition
 	sentence Filename_format experiment_participant_item_condition
 	natural wordTierNumber 1
@@ -26,7 +26,7 @@ form Annotate Words of Interest
 	comment Add additional subintervals
     boolean addVowels 1
     boolean addStressedVowels 1
-    boolean addSyllables 0
+    boolean addSyllables 1
 	comment Do you want to split medial sC clusters when syllabifying?
 	boolean splitSCClusters 1
 	comment Adjustments to labels according to language
@@ -35,7 +35,7 @@ form Annotate Words of Interest
 		option French
 		option German
 	boolean OpenProblematicSoundfiles 1
-	sentence soundDirectory ../recordedFilesAnnotate/truncated
+	sentence soundDirectory ../dataSoundTruncated
 	sentence soundExtension .wav
 endform
 
@@ -379,7 +379,7 @@ call columnIndex  'filename_format$'
 
 
 #  Read in woi file
-Read Table from tab-separated file... 'textGridDirectory$''woi_file$'
+Read Table from tab-separated file... 'woi_file$'
 woi_file = selected("Table")
 
 
