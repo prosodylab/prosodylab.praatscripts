@@ -14,8 +14,8 @@ echo Annotate intervals of interest
 
 
 form Annotate Words of Interest	
-	sentence Woi_file ../phocusTwo.tsv
-	sentence TextGridDirectory ../dataTextGrids
+	sentence Woi_file ../../stimuliWoiAnnotation/wordITL.tsv
+	sentence TextGridDirectory ./
 	sentence Id_columns experiment_item_condition
 	sentence Filename_format experiment_participant_item_condition
 	natural wordTierNumber 1
@@ -644,7 +644,12 @@ for i to numberOfLoops
 
 					# place boundary at end of previous syllable (or word beginning)
 					syllableEndTime = Get start time of interval... segmentTier startSegment+endSyllable
-					Insert boundary... syllableTier syllableEndTime
+
+					isEdge = Get interval edge from time... syllableTier syllableEndTime
+					if isEdge = 0
+						Insert boundary... syllableTier syllableEndTime
+					endif
+
 
 					# add label for current syllable
 					#
