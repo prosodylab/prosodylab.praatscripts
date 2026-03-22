@@ -19,7 +19,7 @@ echo Extract Acoustic Measures for intervals and zones of interest
 
 form Calculate Results for Production Experiments
 	sentence Name_Format experiment_participant_item_condition
-	sentence Output_Filename phocus2AcousticsStressedVowels
+	sentence Output_Filename idiomsAcousics
 	sentence extension .wav
 	comment Specify directory -- otherwise selected soundfiles will be annotated
 	sentence soundDirectory ../recordedFilesAnnotate/truncated
@@ -27,9 +27,9 @@ form Calculate Results for Production Experiments
 	natural wordTier 1
     natural phonTier 2
 	comment Tier with intervals of interest (0 if none)
-	natural ioiTier 5
+	natural ioiTier 3
 	comment Measures for zones as well?
-    boolean zones 1
+    boolean zones 0
 	comment Measure all words, so one can plot entire utterance?
 	comment (only works if intervals of interest correspond to entire words)
     boolean AllWords 0

@@ -31,45 +31,29 @@ Text writing preferences: "UTF-8"
 echo Annotation Script
 printline
 
-# additional parameters that are not set in the form below
-
-    # If truncating, make guess of what part of sound to keep and highlight it?
-    make_guess = 1
-	# silence threshold for detecting soundfile 
-	silenceThreshhold = 50
-
-	# if directory for truncation does not yet exist, create it?
-    makeDirectory = 1
-
-    # if zoning in to woi, how much margin should be left?
-    marginSize = 0.1
-
 form Annotation
     comment Annotator name and annotation file:
-    sentence left_annotator sabrina
-    sentence right_responsesFile phocusTwoSabrina.txt
-    boolean RandomizePresentationOrder yes
-
+	#
+    sentence left_annotator marina
+    sentence right_responsesFile annotation_qcog
+    boolean RandomizePresentationOrder no
+	boolean AddRowsForNewSoundFiles no
     #
-	comment Start new annotation, create response file, or add rows?
-    boolean CreateNewResponsesFile no
-	boolean newAnnotation
-    boolean AddRowsForNewSoundFiles no
+    comment Save sound, lab, and Textgrid?
+    #
+	boolean truncate no
+	sentence directoryTruncatedFiles ../experiment/dataSoundTruncated
 
-    # Annotation file name:
+    # Soundfile location:
     comment Soundfile location (leave empty if same directory) and extension:
-	sentence left_soundDirectory ../dataSoundTruncated
+	sentence left_soundDirectory ../experiment/dataSound
     sentence right_Extension .wav
 	sentence filenameFormat experiment_participant_item_condition
 
 	# TextGrid location
     comment Load TexgGrids (empty if same directory), or create new from template (empty if not)?
-	sentence left_gridDirectory ../dataTextGrids
+	sentence left_gridDirectory ../sice/experiment/dataSound
 	sentence right_templateGrid
-    #
-    comment Save sound, lab, and Textgrid?
-	boolean truncate no
-	sentence directoryTruncatedFiles ../dataSoundTruncated
 
     #
     comment Zone in to certain part (specify woiTier and WOI if yes)?
@@ -88,12 +72,26 @@ form Annotation
 		option don't annotate this condition
     natural restrictCondition 1
     comment Restrict to certain experiment?
-	optionmenu experimentRestriction: 2
+	optionmenu experimentRestriction: 3
 		option No
 		option only annotate this experiment
 		option don't annotate this experiment
-    sentence restrictExperiment phocusTwo
+    sentence restrictExperiment miccheck
 endform
+
+
+# additional parameters that are not set in the form above
+
+    # If truncating, make guess of what part of sound to keep and highlight it?
+    make_guess = 1
+	# silence threshold for detecting soundfile 
+	silenceThreshhold = 50
+
+	# if directory for truncation does not yet exist, create it?
+    makeDirectory = 1
+
+    # if zoning in to woi, how much margin should be left?
+    marginSize = 0.1
 
 
 # simplify variable names
@@ -105,7 +103,7 @@ zoneWoi = right_zoneWoi
 templateGrid$ = right_templateGrid$
 gridDirectory$ = left_gridDirectory$
 annotator$ = left_annotator$
-responsesFile$ =  right_responsesFile$
+responsesFile$ =  right_responsesFile$ + "_" + annotator$ + ".txt"
 
 if soundDirectory$ = ""
 	soundfile_in_same_directory_as_script = 1
@@ -210,12 +208,9 @@ else
 endif   
 
 
-# Create response files with all .wav files names in random order
+# Create response files if not already existant
 #
-if createNewResponsesFile
-   if fileReadable(responsesFile$)
-	 exitScript: "There already exists a response file with the name 'responsesFile$'!"
-   else
+if not fileReadable(responsesFile$)
      Create Strings as file list... responsesFile 'soundDirectory$'/*.wav
      fileList = selected("Strings")
      numberSoundFiles = Get number of strings
@@ -240,7 +235,9 @@ if createNewResponsesFile
      Insert string... 1 recordedFile
      Save as raw text file... 'responsesFile$'
      Remove
-  endif
+	 #
+	 printline Created responsefile: 'responsesFile$'
+	 printline
 endif
 
 # Add rows for new soundfiles if desired and save file
@@ -296,8 +293,6 @@ if addRowsForNewSoundFiles
 endif
 
 
-
-
 # Read in response file
 Read Table from tab-separated file... 'responsesFile$'
 responsesFile = selected("Table")
@@ -315,17 +310,20 @@ endif
 presentationOrder = selected("Permutation")
 
 # Add annotator columns if they aren't already theres
-if newAnnotation 
+
+select responsesFile
+col = Get column index: "'annotator$'_quality"
+
+if col = 0 
 	select responsesFile
-    alreadyThere = Get column index... "'annotator$'_quality"
-    if alreadyThere = 1
-        exitScript: "Column 'annotator$'_quality already exists!"
-    else
-		Append column... 'annotator$'_accentuationFirst
-		Append column... 'annotator$'_accentuationSecond
-		Append column... 'annotator$'_quality
-		Append column... 'annotator$'_comments
-    endif
+	Append column... 'annotator$'_prominence
+	Append column... 'annotator$'_contour
+	Append column... 'annotator$'_quality
+	Append column... 'annotator$'_comments
+	Write to table file... 'responsesFile$'
+
+	printline Added annotation columns for: 'annotator$'
+	printline
 endif
 
 
@@ -373,6 +371,7 @@ for i from 1 to trials
     woiTierThisFile = woiTier
 
     if fileReadable(soundfile$) = 0
+	  printline
       printline 'i'/'trials': File 'filename$' (row: 'file') not readable
     else
       Read from file... 'soundfile$'
@@ -550,17 +549,22 @@ editor 'editorname$' soundname
   beginPause: "Annotation/Truncation"
 	boolean: "TruncateAndSaveSound" , 'truncate'
 	boolean: "SaveLabFile", 'truncate'
-	choice: "firstSentence", 1
+	choice: "prominence", 1
 		option: "Not annotated"
-		option: "Default Accent"
-		option: "Accent shifted within word"
-        option: "Accent shifted to other word"
+		option: "Default prominence"
+		option: "Subject"
+        option: "Verb"
+        option: "Other"
 		option: "Unclear"
-	choice: "secondSentence", 1
+	choice: "contour", 1
 		option: "Not annotated"
-		option: "Default Accent"
-		option: "Accent shifted within word"
-        option: "Accent shifted to other word"
+		option: "Fall"
+		option: "Upstepped"
+		option: "YesnoRise"
+		option: "HalfHeartedYesnoRise"
+		option: "ContradictionContour"
+		option: "RiseFallRise"
+        option: "Other"
 		option: "Unclear"
 	sentence: "comments", ""
 	optionMenu: "Quality", 1
@@ -600,8 +604,8 @@ endeditor
 select responsesFile
 
 if applyQualitytoAllfilesofParticipant = 0	
-	Set string value... 'file' 'annotator$'_accentuationFirst 'firstSentence$'
-	Set string value... 'file' 'annotator$'_accentuationSecond 'secondSentence$'
+	Set string value... 'file' 'annotator$'_prominence 'prominence$'
+	Set string value... 'file' 'annotator$'_contour 'contour$'
 	Set string value... 'file' 'annotator$'_quality 'quality$'
 	Set string value... 'file' 'annotator$'_comments 'comments$'
 else
